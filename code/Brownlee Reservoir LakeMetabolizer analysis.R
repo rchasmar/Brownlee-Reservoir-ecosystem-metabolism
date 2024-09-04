@@ -104,7 +104,8 @@ ppr318_wnd_2021 <- read.csv(
 )[c("Timestamp..UTC.07.00.", "Value")]
 
 # Remove all dataframes with names starting with a capital letter
-rm(list = ls()[sapply(mget(ls(), .GlobalEnv), is.data.frame) & grepl("^[A-Z]", ls())])
+rm(list = ls()[sapply(mget(ls(), .GlobalEnv), is.data.frame) & 
+               grepl("^[A-Z]", ls())])
 
 #===============================================================================
 # PROCESS TIME SERIES AND PROFILE DATAFRAMES
