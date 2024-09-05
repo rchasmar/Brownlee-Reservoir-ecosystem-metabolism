@@ -273,7 +273,29 @@ dataframes_wthr[["ppr318_wnd"]] <- ppr318_wnd
 # DO, DO SATURATION CONCENTRATION AND DO % SATURATION
 #===============================================================================
 
+# Loop through each dataframe in dataframes_ts
+for (name in names(dataframes_ts)) {
+  df <- dataframes_ts[[name]]
+  
+  # Compute do.sat
+  df$do.sat <- compute_oxygen_saturation(df$wtr + 273.15)
+  
+  # Compute do.percent
+  df$do.percent <- (df$'do.obs' / df$'do.sat') * 100
+  
+  # Set do.obs and do.sat to NA where do.percent > 250
+  idx <- which(df$do.percent > 250)
+  df[idx, c('do.obs', 'do.sat')] <- NA  
 
+  # Apply the remove_do_anomalies function
+  df <- remove_do_anomalies(df)
+  
+  # Update the dataframe in the list
+  dataframes_ts[[name]] <- df
+}
+
+# Reassign the modified dataframe back to the global environment
+list2env(dataframes_ts, envir = .GlobalEnv)
 
 #===============================================================================
 # PUSH TO GITHUB
