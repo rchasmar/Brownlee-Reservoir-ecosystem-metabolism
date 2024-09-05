@@ -121,6 +121,17 @@ compute_oxygen_saturation <- function(x) {
 }
 
 #===============================================================================
+#
+#===============================================================================
+
+remove_do_anomalies <- function(df, threshold = 2) {
+  df %>%
+    mutate(do_diff = c(NA, diff(do.obs)), 
+           do.obs = ifelse(abs(do_diff) > threshold, NA, do.obs)) %>% 
+    select(-do_diff)
+}
+
+#===============================================================================
 # Function to stage, commit, and push changes to GitHub
 #===============================================================================
 

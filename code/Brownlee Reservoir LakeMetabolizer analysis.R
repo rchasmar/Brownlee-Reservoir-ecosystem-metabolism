@@ -283,9 +283,9 @@ for (name in names(dataframes_ts)) {
   # Compute do.percent
   df$do.percent <- (df$'do.obs' / df$'do.sat') * 100
   
-  # Set do.obs and do.sat to NA where do.percent > 250
-  idx <- which(df$do.percent > 250)
-  df[idx, c('do.obs', 'do.sat')] <- NA  
+  # Set do.obs and do.sat to NA where do.percent > 200
+  idx <- which(df$do.percent > 200)
+  df[idx, c('do.obs', 'do.sat', 'do.percent')] <- NA  
 
   # Apply the remove_do_anomalies function
   df <- remove_do_anomalies(df)
