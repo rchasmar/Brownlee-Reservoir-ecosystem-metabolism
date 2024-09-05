@@ -275,3 +275,11 @@ dataframes_wthr[["ppr318_wnd"]] <- ppr318_wnd
 
 ass
 
+# Stage all changes
+system("git add .")
+
+# Commit the changes
+system('git commit -m "Automated commit from R script"')
+
+# Push the changes
+system("git push -u origin main")
