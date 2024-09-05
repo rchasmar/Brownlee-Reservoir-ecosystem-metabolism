@@ -1,0 +1,39 @@
+plot(meta ~ datetime, data = ppr286_meta_2021)
+  axis.POSIXct(1, at = date, labels = format(date, "%Y"), las = 1)
+  abline(v = date, lty = 'dashed')
+
+
+# Filter the dataframe to include only rows from 2021
+ppr286_meta_2021 <- subset(ppr286_meta, format(date, "%Y") == "2021")
+
+# Convert datetime to numeric
+Time <- as.numeric(ppr286_meta_2021$datetime)
+
+# Create cosine and sine terms for the model
+xc <- cos(2 * pi * Time / 36536000)
+xs <- sin(2 * pi * Time / 36536000)
+
+# Fit the linear model
+fit.lm <- lm(ppr286_meta_2021$meta ~ xc + xs)
+
+# Access the fitted series (for plotting)
+fit <- fitted(fit.lm)
+
+# Generate a sequence of time points for prediction
+new_time <- seq(min(Time), max(Time), by = 600)
+
+# Create a new dataframe for prediction
+newdata <- data.frame(Time = new_time,
+                      xc = cos(2 * pi * new_time / 36536000),
+                      xs = sin(2 * pi * new_time / 36536000))
+
+# Find predictions for the new time series
+pred <- predict(fit.lm, newdata = newdata)
+
+# Plot the original data
+plot(ppr286_meta_2021$meta ~ Time, main = "Meta Data with Fitted and Predicted Values", xlab = "Time", ylab = "Meta", ylim = c(0, 40))
+
+# Add the predicted values to the plot
+lines(new_time, pred, col = "blue", lwd = 2)
+
+

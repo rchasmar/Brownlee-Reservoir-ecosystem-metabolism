@@ -310,6 +310,54 @@ list2env(dataframes_ts, envir = .GlobalEnv)
 # Z.MIX
 #===============================================================================
 
+# Assuming your list of dataframes is called dataframes_ts
+# Extract the datetime column from one of the dataframes
+datetime <- dataframes_ts[[1]]$datetime
+
+# Function to extract and rename 'wtr' columns
+extract_wtr <- function(df_list, prefix) {
+  wtr_list <- lapply(df_list, function(df) df$wtr)
+  names(wtr_list) <- sapply(names(df_list), function(name) {
+    parts <- unlist(strsplit(name, "_"))
+    paste0("wtr_", as.numeric(parts[2]))
+  })
+  wtr_df <- do.call(cbind, wtr_list)
+  return(wtr_df)
+}
+
+# Extract and combine 'wtr' columns for each prefix
+ppr286_dfs <- dataframes_ts[grep("ppr286", names(dataframes_ts))]
+ppr300_dfs <- dataframes_ts[grep("ppr300", names(dataframes_ts))]
+ppr318_dfs <- dataframes_ts[grep("ppr318", names(dataframes_ts))]
+
+ppr286_wtr <- extract_wtr(ppr286_dfs, "ppr286")
+ppr300_wtr <- extract_wtr(ppr300_dfs, "ppr300")
+ppr318_wtr <- extract_wtr(ppr318_dfs, "ppr318")
+
+# Combine datetime with the new 'wtr' dataframes
+ppr286_wtr <- data.frame(datetime, ppr286_wtr)
+ppr300_wtr <- data.frame(datetime, ppr300_wtr)
+ppr318_wtr <- data.frame(datetime, ppr318_wtr)
+
+# Apply ts.meta.depths to each dataframe with na.rm = TRUE
+ppr286_meta <- ts.meta.depths(ppr286_wtr, na.rm = TRUE)
+ppr300_meta <- ts.meta.depths(ppr300_wtr, na.rm = TRUE)
+ppr318_meta <- ts.meta.depths(ppr318_wtr, na.rm = TRUE)
+
+# Apply the function to each of your final dataframes
+ppr286_meta <- remove_non_finite_top(ppr286_meta)
+ppr300_meta <- remove_non_finite_top(ppr300_meta)
+ppr318_meta <- remove_non_finite_top(ppr318_meta)
+
+# Apply smooth.spline and directly get the fitted values
+spar <- 0.7
+ppr286_meta$meta <- smooth.spline(as.numeric(ppr286_meta$datetime), 
+                                  ppr286_meta$top, spar = spar)$y
+ppr300_meta$meta <- smooth.spline(as.numeric(ppr300_meta$datetime), 
+                                  ppr300_meta$top, spar = spar)$y
+ppr318_meta$meta <- smooth.spline(as.numeric(ppr318_meta$datetime), 
+                                  ppr318_meta$top, spar = spar)$y
+
 
 
 #===============================================================================

@@ -132,6 +132,15 @@ remove_do_anomalies <- function(df, threshold = 2) {
 }
 
 #===============================================================================
+# Function to remove rows where 'top' is not a real number
+#===============================================================================
+
+remove_non_finite_top <- function(df) {
+  df <- df[is.finite(df$top), ]
+  return(df)
+}
+
+#===============================================================================
 # Function to stage, commit, and push changes to GitHub
 #===============================================================================
 
