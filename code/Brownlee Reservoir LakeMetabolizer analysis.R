@@ -369,17 +369,33 @@ ppr318_meta$doy <- as.numeric(format(ppr318_meta$datetime, "%j"))
 # Set up the plotting area for 1x3 layout
 par(mfrow = c(1, 3))
 
-# For ppr286_meta
-result_286 <- model_and_predict(ppr286_meta)
-plot_predictions(ppr286_meta, result_286$predictions, result_286$new_time, "PPR286 Meta Data with Fitted and Predicted Values")
+# Create plots for each dataframe
+create_plot(ppr286_meta, "PPR286 Meta Data with Fitted and Predicted Values")
+create_plot(ppr300_meta, "PPR300 Meta Data with Fitted and Predicted Values")
+create_plot(ppr318_meta, "PPR318 Meta Data with Fitted and Predicted Values")
 
-# For ppr300_meta
-result_300 <- model_and_predict(ppr300_meta)
-plot_predictions(ppr300_meta, result_300$predictions, result_300$new_time, "PPR300 Meta Data with Fitted and Predicted Values")
+# Fit models for the meta dataframes
+fit_286 <- fit_model(ppr286_meta)
+fit_300 <- fit_model(ppr300_meta)
+fit_318 <- fit_model(ppr318_meta)
 
-# For ppr318_meta
-result_318 <- model_and_predict(ppr318_meta)
-plot_predictions(ppr318_meta, result_318$predictions, result_318$new_time, "PPR318 Meta Data with Fitted and Predicted Values")
+# Loop through each dataframe in dataframes_ts
+for (name in names(dataframes_ts)) {
+  df <- dataframes_ts[[name]]
+
+  if (grepl("^ppr286", name)) {
+    df <- add_predictions(df, fit_286)
+  } else if (grepl("^ppr300", name)) {
+    df <- add_predictions(df, fit_300)
+  } else if (grepl("^ppr318", name)) {
+    df <- add_predictions(df, fit_318)
+  }
+  
+# Update the dataframe in the list
+  dataframes_ts[[name]] <- df
+}
+
+list2env(dataframes_ts, envir = .GlobalEnv)
 
 #===============================================================================
 # PUSH TO GITHUB

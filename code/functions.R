@@ -141,14 +141,13 @@ remove_non_finite_top <- function(df) {
 }
 
 #===============================================================================
-# Function to perform modeling and prediction
+# Function to perform the analysis and create the plot
 # Parameters:
 #   df: Dataframe containing the data
-# Returns:
-#   A list containing the fitted model and predictions
+#   title: Title for the plot
 #===============================================================================
 
-model_and_predict <- function(df) {
+create_plot <- function(df, title) {
   # Convert datetime to numeric DOY
   Time <- df$doy
   
@@ -170,24 +169,36 @@ model_and_predict <- function(df) {
   # Find predictions for the new time series
   pred <- predict(fit.lm, newdata = newdata)
   
-  return(list(model = fit.lm, predictions = pred, new_time = new_time))
+  # Plot the original data
+  plot(df$meta ~ Time, main = title, xlab = "Time", ylab = "Meta", 
+       ylim = c(0, 40), xlim = c(0, 366))
+  
+  # Add the predicted values to the plot
+  lines(new_time, pred, col = "red", lwd = 2)
 }
 
 #===============================================================================
-# Function to create the plot
-# Parameters:
-#   df: Dataframe containing the original data
-#   predictions: Predicted values
-#   new_time: Sequence of time points for prediction
-#   title: Title for the plot
+# Fit models for the meta dataframes
 #===============================================================================
 
-plot_predictions <- function(df, predictions, new_time, title) {
-  # Plot the original data
-  plot(df$meta ~ df$doy, main = title, xlab = "Time", ylab = "Meta", ylim = c(0, 40), xlim = c(0, 365))
-  
-  # Add the predicted values to the plot
-  lines(new_time, predictions, col = "red", lwd = 2)
+fit_model <- function(df) {
+  Time <- df$doy
+  xc <- cos(2 * pi * Time / 365.25)
+  xs <- sin(2 * pi * Time / 365.25)
+  lm(df$meta ~ xc + xs)
+}
+
+#===============================================================================
+# Function to predict and add z.mix column
+#===============================================================================
+
+add_predictions <- function(df, model) {
+  Time <- df$doy
+  newdata <- data.frame(Time = Time,
+                        xc = cos(2 * pi * Time / 365.25),
+                        xs = sin(2 * pi * Time / 365.25))
+  df$z.mix <- predict(model, newdata = newdata)
+  return(df)
 }
 
 #===============================================================================
