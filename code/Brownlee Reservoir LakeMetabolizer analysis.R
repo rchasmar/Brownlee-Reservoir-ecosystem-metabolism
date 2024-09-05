@@ -181,7 +181,10 @@ for (name in names(dataframes_ts)) {
   # 10. Pad the dataframe to fill in missing datetime values
   df <- pad(df, by = 'datetime', interval = '10 min')
 
-  # 11. Set row names
+  # 11. Add a DOY column
+  df$doy <- as.numeric(format(df$datetime, "%j"))
+
+  # 12. Set row names
   rownames(df) <- seq(1, nrow(df), 1)
 
   # Update the dataframe in the list
@@ -358,7 +361,25 @@ ppr300_meta$meta <- smooth.spline(as.numeric(ppr300_meta$datetime),
 ppr318_meta$meta <- smooth.spline(as.numeric(ppr318_meta$datetime), 
                                   ppr318_meta$top, spar = spar)$y
 
+# Add DOY (Dheaday of Year) column to each dataframe
+ppr286_meta$doy <- as.numeric(format(ppr286_meta$datetime, "%j"))
+ppr300_meta$doy <- as.numeric(format(ppr300_meta$datetime, "%j"))
+ppr318_meta$doy <- as.numeric(format(ppr318_meta$datetime, "%j"))
 
+# Set up the plotting area for 1x3 layout
+par(mfrow = c(1, 3))
+
+# For ppr286_meta
+result_286 <- model_and_predict(ppr286_meta)
+plot_predictions(ppr286_meta, result_286$predictions, result_286$new_time, "PPR286 Meta Data with Fitted and Predicted Values")
+
+# For ppr300_meta
+result_300 <- model_and_predict(ppr300_meta)
+plot_predictions(ppr300_meta, result_300$predictions, result_300$new_time, "PPR300 Meta Data with Fitted and Predicted Values")
+
+# For ppr318_meta
+result_318 <- model_and_predict(ppr318_meta)
+plot_predictions(ppr318_meta, result_318$predictions, result_318$new_time, "PPR318 Meta Data with Fitted and Predicted Values")
 
 #===============================================================================
 # PUSH TO GITHUB

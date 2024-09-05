@@ -141,6 +141,56 @@ remove_non_finite_top <- function(df) {
 }
 
 #===============================================================================
+# Function to perform modeling and prediction
+# Parameters:
+#   df: Dataframe containing the data
+# Returns:
+#   A list containing the fitted model and predictions
+#===============================================================================
+
+model_and_predict <- function(df) {
+  # Convert datetime to numeric DOY
+  Time <- df$doy
+  
+  # Create cosine and sine terms for the model
+  xc <- cos(2 * pi * Time / 365.25)
+  xs <- sin(2 * pi * Time / 365.25)
+  
+  # Fit the linear model
+  fit.lm <- lm(df$meta ~ xc + xs)
+  
+  # Generate a sequence of time points for prediction (1 to 366)
+  new_time <- seq(1, 366, by = 1)
+  
+  # Create a new dataframe for prediction
+  newdata <- data.frame(Time = new_time,
+                        xc = cos(2 * pi * new_time / 365.25),
+                        xs = sin(2 * pi * new_time / 365.25))
+  
+  # Find predictions for the new time series
+  pred <- predict(fit.lm, newdata = newdata)
+  
+  return(list(model = fit.lm, predictions = pred, new_time = new_time))
+}
+
+#===============================================================================
+# Function to create the plot
+# Parameters:
+#   df: Dataframe containing the original data
+#   predictions: Predicted values
+#   new_time: Sequence of time points for prediction
+#   title: Title for the plot
+#===============================================================================
+
+plot_predictions <- function(df, predictions, new_time, title) {
+  # Plot the original data
+  plot(df$meta ~ df$doy, main = title, xlab = "Time", ylab = "Meta", ylim = c(0, 40), xlim = c(0, 365))
+  
+  # Add the predicted values to the plot
+  lines(new_time, predictions, col = "red", lwd = 2)
+}
+
+#===============================================================================
 # Function to stage, commit, and push changes to GitHub
 #===============================================================================
 

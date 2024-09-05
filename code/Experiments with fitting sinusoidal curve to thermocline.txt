@@ -1,39 +1,19 @@
-plot(meta ~ datetime, data = ppr286_meta_2021)
-  axis.POSIXct(1, at = date, labels = format(date, "%Y"), las = 1)
-  abline(v = date, lty = 'dashed')
+# Add DOY (Day of Year) column to each dataframe
+ppr286_meta$doy <- as.numeric(format(ppr286_meta$datetime, "%j"))
+ppr300_meta$doy <- as.numeric(format(ppr300_meta$datetime, "%j"))
+ppr318_meta$doy <- as.numeric(format(ppr318_meta$datetime, "%j"))
 
+# Set up the plotting area for 1x3 layout
+par(mfrow = c(1, 3))
 
-# Filter the dataframe to include only rows from 2021
-ppr286_meta_2021 <- subset(ppr286_meta, format(date, "%Y") == "2021")
+# For ppr286_meta
+result_286 <- model_and_predict(ppr286_meta)
+plot_predictions(ppr286_meta, result_286$predictions, result_286$new_time, "PPR286 Meta Data with Fitted and Predicted Values")
 
-# Convert datetime to numeric
-Time <- as.numeric(ppr286_meta_2021$datetime)
+# For ppr300_meta
+result_300 <- model_and_predict(ppr300_meta)
+plot_predictions(ppr300_meta, result_300$predictions, result_300$new_time, "PPR300 Meta Data with Fitted and Predicted Values")
 
-# Create cosine and sine terms for the model
-xc <- cos(2 * pi * Time / 36536000)
-xs <- sin(2 * pi * Time / 36536000)
-
-# Fit the linear model
-fit.lm <- lm(ppr286_meta_2021$meta ~ xc + xs)
-
-# Access the fitted series (for plotting)
-fit <- fitted(fit.lm)
-
-# Generate a sequence of time points for prediction
-new_time <- seq(min(Time), max(Time), by = 600)
-
-# Create a new dataframe for prediction
-newdata <- data.frame(Time = new_time,
-                      xc = cos(2 * pi * new_time / 36536000),
-                      xs = sin(2 * pi * new_time / 36536000))
-
-# Find predictions for the new time series
-pred <- predict(fit.lm, newdata = newdata)
-
-# Plot the original data
-plot(ppr286_meta_2021$meta ~ Time, main = "Meta Data with Fitted and Predicted Values", xlab = "Time", ylab = "Meta", ylim = c(0, 40))
-
-# Add the predicted values to the plot
-lines(new_time, pred, col = "blue", lwd = 2)
-
-
+# For ppr318_meta
+result_318 <- model_and_predict(ppr318_meta)
+plot_predictions(ppr318_meta, result_318$predictions, result_318$new_time, "PPR318 Meta Data with Fitted and Predicted Values")
