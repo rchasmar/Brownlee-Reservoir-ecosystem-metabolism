@@ -193,10 +193,10 @@ for (name in names(dataframes_prf)) {
   df <- dataframes_prf[[name]]
   
   # 1. Select the specified columns
-  df <- df[, c('DateTime', 'Date', 'DO', 'WTemp', 'PAR', 'Depth')]
+  df <- df[, c('DateTime', 'Date', 'DO', 'WTemp', 'PAR', 'SpecCond', 'Depth')]
   
   # 2. Rename the columns
-  colnames(df) <- c("datetime", "date", "do.obs", "wtr", "irr", "depth")
+  colnames(df) <- c("datetime", "date", "do.obs", "wtr", "irr", "cond", "depth")
   
   # 3. Set row names
   rownames(df) <- seq(1, nrow(df), 1)
@@ -206,6 +206,15 @@ for (name in names(dataframes_prf)) {
   
   # 5. Convert the 'date' column to Date objects
   df$date <- as.Date(df$date, format = "%m/%d/%Y")
+
+  # 6. Convert conductivity from mS/cm to µS/m
+  df$cond <- df$cond * 1000
+
+  # 7. Calculate salinity (PSU) based on conductivity
+  df$salinity <- 6e-04 * df$cond
+
+  # 8. Calculate water density using water.density function
+  df$wtr_density <- water.density(wtr = df$wtr, sal = df$salinity)
 
   # Update the dataframe in the list
   dataframes_prf[[name]] <- df
@@ -285,7 +294,7 @@ for (name in names(dataframes_ts)) {
   
   # Set do.obs and do.sat to NA where do.percent > 200
   idx <- which(df$do.percent > 200)
-  df[idx, c('do.obs', 'do.sat', 'do.percent')] <- NA  
+  df[idx, c('do.obs', 'do.percent')] <- NA  
 
   # Apply the remove_do_anomalies function
   df <- remove_do_anomalies(df)
@@ -298,7 +307,14 @@ for (name in names(dataframes_ts)) {
 list2env(dataframes_ts, envir = .GlobalEnv)
 
 #===============================================================================
+# Z.MIX
+#===============================================================================
+
+
+
+#===============================================================================
 # PUSH TO GITHUB
 #===============================================================================
 
 automate_git()
+
