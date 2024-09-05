@@ -120,7 +120,19 @@ compute_oxygen_saturation <- function(x) {
   return(Cp)
 }
 
+#===============================================================================
+# Function to stage, commit, and push changes to GitHub
+#===============================================================================
 
-
+automate_git <- function(commit_message = "Automated commit from R script") {
+  # Stage all changes
+  system("git add .")
+  
+  # Commit the changes
+  system(paste('git commit -m', shQuote(commit_message)))
+  
+  # Push the changes
+  system("git push -u origin main")
+}
 
 

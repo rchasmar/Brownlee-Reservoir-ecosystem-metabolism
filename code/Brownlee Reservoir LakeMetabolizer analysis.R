@@ -273,11 +273,10 @@ dataframes_wthr[["ppr318_wnd"]] <- ppr318_wnd
 # DO, DO SATURATION CONCENTRATION AND DO % SATURATION
 #===============================================================================
 
-# Stage all changes
-system("git add .")
 
-# Commit the changes
-system('git commit -m "Automated commit from R script"')
 
-# Push the changes
-system("git push -u origin main")
+#===============================================================================
+# PUSH TO GITHUB
+#===============================================================================
+
+automate_git()
