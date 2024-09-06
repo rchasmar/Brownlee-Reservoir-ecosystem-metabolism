@@ -368,6 +368,16 @@ add_gaussian_predictions <- function(df, model) {
 }
 
 #===============================================================================
+# Add PAR at depths
+#===============================================================================
+
+add_par_at_depths <- function(df, depth) {
+  # Calculate PAR at the given depth
+  df$irr <- df$irr_surface * exp(-df$Kd * depth)
+  return(df)
+}
+
+#===============================================================================
 # Function to stage, commit, and push changes to GitHub
 #===============================================================================
 

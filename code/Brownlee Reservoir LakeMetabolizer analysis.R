@@ -517,6 +517,12 @@ for (name in names(dataframes_ts)) {
   # Add Gaussian predictions using the combined Gaussian fit model
   df <- add_gaussian_predictions(df, gaussian_fit)
 
+  # Extract the depth from the dataframe name
+  depth <- as.numeric(sub(".*_(\\d+)$", "\\1", name))
+  
+  # Add PAR at different depths using the extracted depth
+  df <- add_par_at_depths(df, depth)
+
   # Update the dataframe in the list
   dataframes_ts[[name]] <- df
 }
