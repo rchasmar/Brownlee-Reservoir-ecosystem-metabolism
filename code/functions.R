@@ -269,6 +269,94 @@ add_irr_surface_column <- function(df, irr_df) {
 }
 
 #===============================================================================
+# Function to find the closest datetime
+#===============================================================================
+
+find_closest_datetime <- function(target_datetime, datetime_vector) {
+  diffs <- abs(difftime(datetime_vector, target_datetime, units = "secs"))
+  closest_index <- which.min(diffs)
+  return(datetime_vector[closest_index])
+}
+
+#===============================================================================
+# Function to calculate R-squared
+#===============================================================================
+
+calculate_r_squared <- function(model, data) {
+  observed <- data$irr
+  fitted <- predict(model)
+  tss <- sum((observed - mean(observed))^2)
+  rss <- sum(residuals(model)^2)
+  r_squared <- 1 - (rss / tss)
+  return(r_squared)
+}
+
+#===============================================================================
+# Function to process dataframes
+#===============================================================================
+
+process_dataframe <- function(prf_df, par_df) {
+  split_data <- split(prf_df, prf_df$date)
+  results_list <- list()
+  
+  for (date in names(split_data)) {
+    df <- split_data[[date]]
+    first_datetime <- df$datetime[1]
+    closest_datetime <- find_closest_datetime(first_datetime, par_df$datetime)
+    I0 <- par_df$value[par_df$datetime == closest_datetime]
+    
+    if (is.na(I0) || is.infinite(I0)) {
+      next
+    }
+    
+    fit <- tryCatch({
+      nls(irr ~ I0 * exp(-Kd * depth), data = df, start = list(Kd = 0.1))
+    }, error = function(e) {
+      return(NULL)
+    })
+    
+    if (is.null(fit)) {
+      next
+    }
+    
+    Kd_value <- coef(fit)["Kd"]
+    r_squared <- calculate_r_squared(fit, df)
+    results_list[[date]] <- data.frame(date = as.Date(date), Kd = Kd_value, R_squared = r_squared)
+  }
+  
+  results_df <- do.call(rbind, results_list)
+  results_df$R_squared <- as.numeric(format(results_df$R_squared, scientific = FALSE))
+  results_df$day_of_year <- yday(results_df$date)
+  results_df <- results_df %>%
+    mutate(Kd = ifelse(R_squared < 0.9 | Kd > 1.5, NA, Kd),
+           R_squared = ifelse(R_squared < 0 | R_squared > 1, NA, R_squared))
+  rownames(results_df) <- seq_len(nrow(results_df))
+  
+  return(results_df)
+}
+
+#===============================================================================
+# Function to convert day_of_year to date format without year for axis labels
+#===============================================================================
+
+day_of_year_to_month <- function(day_of_year) {
+  month(as.Date(day_of_year - 1, origin = "2023-01-01"), label = TRUE)
+}
+
+#===============================================================================
+# Calculate R-squared for Gaussian fit
+#===============================================================================
+
+calculate_gaussian_r_squared <- function(model, data) {
+  observed <- data$Kd
+  fitted <- predict(model, newdata = data)
+  tss <- sum((observed - mean(observed, na.rm = TRUE))^2, na.rm = TRUE)
+  rss <- sum((observed - fitted)^2, na.rm = TRUE)
+  r_squared <- 1 - (rss / tss)
+  return(r_squared)
+}
+
+#===============================================================================
 # Function to stage, commit, and push changes to GitHub
 #===============================================================================
 

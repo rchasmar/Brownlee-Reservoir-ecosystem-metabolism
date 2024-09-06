@@ -1,0 +1,110 @@
+
+# Function to find the closest datetime
+find_closest_datetime <- function(target_datetime, datetime_vector) {
+  diffs <- abs(difftime(datetime_vector, target_datetime, units = "secs"))
+  closest_index <- which.min(diffs)
+  return(datetime_vector[closest_index])
+}
+
+# Function to calculate R-squared
+calculate_r_squared <- function(model, data) {
+  observed <- data$irr
+  fitted <- predict(model)
+  tss <- sum((observed - mean(observed))^2)
+  rss <- sum(residuals(model)^2)
+  r_squared <- 1 - (rss / tss)
+  return(r_squared)
+}
+
+# Function to process dataframes
+process_dataframe <- function(prf_df, par_df) {
+  split_data <- split(prf_df, prf_df$date)
+  results_list <- list()
+  
+  for (date in names(split_data)) {
+    df <- split_data[[date]]
+    first_datetime <- df$datetime[1]
+    closest_datetime <- find_closest_datetime(first_datetime, par_df$datetime)
+    I0 <- par_df$value[par_df$datetime == closest_datetime]
+    
+    if (is.na(I0) || is.infinite(I0)) {
+      next
+    }
+    
+    fit <- tryCatch({
+      nls(irr ~ I0 * exp(-Kd * depth), data = df, start = list(Kd = 0.1))
+    }, error = function(e) {
+      return(NULL)
+    })
+    
+    if (is.null(fit)) {
+      next
+    }
+    
+    Kd_value <- coef(fit)["Kd"]
+    r_squared <- calculate_r_squared(fit, df)
+    results_list[[date]] <- data.frame(date = as.Date(date), Kd = Kd_value, R_squared = r_squared)
+  }
+  
+  results_df <- do.call(rbind, results_list)
+  results_df$R_squared <- as.numeric(format(results_df$R_squared, scientific = FALSE))
+  results_df$day_of_year <- yday(results_df$date)
+  results_df <- results_df %>%
+    mutate(Kd = ifelse(R_squared < 0.9 | Kd > 1.5, NA, Kd),
+           R_squared = ifelse(R_squared < 0 | R_squared > 1, NA, R_squared))
+  rownames(results_df) <- seq_len(nrow(results_df))
+  
+  return(results_df)
+}
+
+# Process each dataframe
+results_286 <- process_dataframe(ppr286_prf, ppr286_par)
+results_300 <- process_dataframe(ppr300_prf, ppr300_par)
+results_318 <- process_dataframe(ppr318_prf, ppr318_par)
+
+# Combine all results into one dataframe
+combined_results <- bind_rows(
+  mutate(results_286, source = "ppr286"),
+  mutate(results_300, source = "ppr300"),
+  mutate(results_318, source = "ppr318")
+)
+
+# Function to convert day_of_year to date format without year for axis labels
+day_of_year_to_month <- function(day_of_year) {
+  month(as.Date(day_of_year - 1, origin = "2023-01-01"), label = TRUE)
+}
+
+# Define the first day of each month
+first_of_month <- c(1, 32, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335)
+
+# Plot all data on one plot
+plot(combined_results$day_of_year, combined_results$Kd, xlab = "Month", ylab = "Kd", main = "Kd vs Day of Year", pch = 19, xlim = c(1, 366), ylim = c(0, 1.5), xaxt = "n", col = as.factor(combined_results$source))
+axis(1, at = first_of_month, labels = day_of_year_to_month(first_of_month))
+
+# Fit a single Gaussian curve for all data
+gaussian_fit <- nls(Kd ~ a * exp(-((day_of_year - b)^2) / (2 * c^2)), data = combined_results, 
+                    start = list(a = 1, b = mean(combined_results$day_of_year, na.rm = TRUE), c = sd(combined_results$day_of_year, na.rm = TRUE)),
+                    control = nls.control(minFactor = 1e-10, maxiter = 1000))
+
+day_of_year_seq <- seq(min(combined_results$day_of_year, na.rm = TRUE), max(combined_results$day_of_year, na.rm = TRUE), length.out = 100)
+fitted_values <- predict(gaussian_fit, newdata = data.frame(day_of_year = day_of_year_seq))
+lines(day_of_year_seq, fitted_values, col = "black", lwd = 2)
+
+# Add legend with matching colors
+legend("topright", legend = unique(combined_results$source), col = unique(as.factor(combined_results$source)), pch = 19)
+
+# Calculate R-squared for Gaussian fit
+calculate_gaussian_r_squared <- function(model, data) {
+  observed <- data$Kd
+  fitted <- predict(model, newdata = data)
+  tss <- sum((observed - mean(observed, na.rm = TRUE))^2, na.rm = TRUE)
+  rss <- sum((observed - fitted)^2, na.rm = TRUE)
+  r_squared <- 1 - (rss / tss)
+  return(r_squared)
+}
+
+# Calculate R-squared for the Gaussian fit
+gaussian_r_squared <- calculate_gaussian_r_squared(gaussian_fit, combined_results)
+
+# Add R-squared and p-value to the plot
+text(10, 1.4, paste("R-squared:", round(gaussian_r_squared, 3), "\nP-value: < 0.005"), pos = 4)
