@@ -313,7 +313,6 @@ list2env(dataframes_ts, envir = .GlobalEnv)
 # Z.MIX
 #===============================================================================
 
-# Assuming your list of dataframes is called dataframes_ts
 # Extract the datetime column from one of the dataframes
 datetime <- dataframes_ts[[1]]$datetime
 
@@ -401,7 +400,7 @@ list2env(dataframes_ts, envir = .GlobalEnv)
 # K.GAS
 #===============================================================================
 
-# Iterate over the list and update the ppr dataframes
+# Iterate over the list and update the time series dataframes
 for (name in names(dataframes_ts)) {
   df <- dataframes_ts[[name]]  # Extract the dataframe by name
   
@@ -420,7 +419,7 @@ for (name in names(dataframes_ts)) {
   # Extract the numeric value after the underscore in the dataframe name
   value_after_underscore <- as.numeric(sub(".*_(\\d+)$", "\\1", name))
   
-  # Find rows where the extracted value is greater than the value in the z.mix column
+  # Find rows where extracted value is greater than value in z.mix column
   rows_to_update <- which(value_after_underscore > df$z.mix)
   
   # Set k.gas to 0 for those rows
@@ -432,6 +431,32 @@ for (name in names(dataframes_ts)) {
 
 # Update the global environment with the modified dataframes
 list2env(dataframes_ts, envir = .GlobalEnv)
+
+#===============================================================================
+# IRRADIANCE
+#===============================================================================
+
+# Apply fill_na_with_solrad function to your dataframes
+ppr286_par <- fill_na_with_solrad(ppr286_solrad, ppr286_par)
+ppr300_par <- fill_na_with_solrad(ppr300_solrad, ppr300_par)
+ppr318_par <- fill_na_with_solrad(ppr318_solrad, ppr318_par)
+
+# Iterate over the list and update the time series dataframes
+for (name in names(dataframes_ts)) {
+  df <- dataframes_ts[[name]]  # Extract the dataframe by name
+  
+  # Add 'irr_surface' column based on the dataframe name pattern
+  if (grepl("^ppr286_", name)) {
+    df <- add_irr_surface_column(df, ppr286_par)
+  } else if (grepl("^ppr300_", name)) {
+    df <- add_irr_surface_column(df, ppr300_par)
+  } else if (grepl("^ppr318_", name)) {
+    df <- add_irr_surface_column(df, ppr318_par)
+  }
+  
+  # Update the dataframe in the list
+  dataframes_ts[[name]] <- df
+}
 
 #===============================================================================
 # PUSH TO GITHUB

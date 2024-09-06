@@ -240,6 +240,35 @@ calculate_kGAS <- function(df) {
 }
 
 #===============================================================================
+# Function to fill NA values in 'par' dataframe using 'solrad' dataframe
+#===============================================================================
+
+fill_na_with_solrad <- function(solrad_df, par_df) {
+  # Identify the rows where 'solrad' has a value and 'par' is NA
+  condition <- !is.na(solrad_df$value) & is.na(par_df$value)
+  
+  # Fill the NA values in 'par' with 'solrad' values multiplied by 1.93
+  par_df$value[condition] <- solrad_df$value[condition] * 1.93
+  
+  return(par_df)
+}
+
+#===============================================================================
+# Function to add 'irr_surface' values from irradiance dataframes to
+# corresponding time series dataframes
+# Args:
+#   df: A dataframe containing the time series data.
+#   irr_df: A dataframe containing the irradiance data.
+# Returns:
+#   The updated time series dataframe with the 'irr_surface' column added.
+#===============================================================================
+
+add_irr_surface_column <- function(df, irr_df) {
+  df$irr_surface <- irr_df$value  # Add 'irr_surface' column from irr_df to df
+  return(df)  # Return the updated dataframe
+}
+
+#===============================================================================
 # Function to stage, commit, and push changes to GitHub
 #===============================================================================
 
