@@ -417,6 +417,15 @@ for (name in names(dataframes_ts)) {
   # Calculate k.gas and add it to the dataframe
   df <- calculate_kGAS(df)
   
+  # Extract the numeric value after the underscore in the dataframe name
+  value_after_underscore <- as.numeric(sub(".*_(\\d+)$", "\\1", name))
+  
+  # Find rows where the extracted value is greater than the value in the z.mix column
+  rows_to_update <- which(value_after_underscore > df$z.mix)
+  
+  # Set k.gas to 0 for those rows
+  df$k.gas[rows_to_update] <- 0
+  
   # Update the dataframe in the list
   dataframes_ts[[name]] <- df
 }
