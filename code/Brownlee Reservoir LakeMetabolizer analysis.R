@@ -452,26 +452,50 @@ combined_results <- bind_rows(
 first_of_month <- c(1, 32, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335)
 
 # Plot all data on one plot
-plot(combined_results$day_of_year, combined_results$Kd, xlab = "Month", ylab = "Kd", main = "Kd vs Day of Year", pch = 19, xlim = c(1, 366), ylim = c(0, 1.5), xaxt = "n", col = as.factor(combined_results$source))
+plot(combined_results$day_of_year, combined_results$Kd, xlab = "Month", 
+     ylab = expression("Light Extinction Coefficient (m"^-1*")"), 
+     main = "Kd vs Day of Year", pch = 19, xlim = c(1, 366), ylim = c(0, 1.5), 
+     xaxt = "n", col = as.factor(combined_results$source))
+
 axis(1, at = first_of_month, labels = day_of_year_to_month(first_of_month))
 
 # Fit a single Gaussian curve for all data
-gaussian_fit <- nls(Kd ~ a * exp(-((day_of_year - b)^2) / (2 * c^2)), data = combined_results, 
-                    start = list(a = 1, b = mean(combined_results$day_of_year, na.rm = TRUE), c = sd(combined_results$day_of_year, na.rm = TRUE)),
+gaussian_fit <- nls(Kd ~ a * exp(-((day_of_year - b)^2) / (2 * c^2)), 
+                    data = combined_results, 
+                    start = list(a = 1, 
+                                 b = mean(combined_results$day_of_year, 
+                                          na.rm = TRUE), 
+                                 c = sd(combined_results$day_of_year, 
+                                        na.rm = TRUE)), 
                     control = nls.control(minFactor = 1e-10, maxiter = 1000))
 
-day_of_year_seq <- seq(min(combined_results$day_of_year, na.rm = TRUE), max(combined_results$day_of_year, na.rm = TRUE), length.out = 100)
-fitted_values <- predict(gaussian_fit, newdata = data.frame(day_of_year = day_of_year_seq))
+# Generate a sequence of day_of_year values for prediction
+day_of_year_seq <- seq(min(combined_results$day_of_year, na.rm = TRUE), 
+                       max(combined_results$day_of_year, na.rm = TRUE), 
+                       length.out = 100)
+
+# Predict Kd values using the Gaussian fit model
+fitted_values <- predict(gaussian_fit, 
+                         newdata = data.frame(day_of_year = day_of_year_seq))
+
+# Add the fitted Gaussian curve to the plot
 lines(day_of_year_seq, fitted_values, col = "black", lwd = 2)
 
 # Add legend with matching colors
-legend("topright", legend = unique(combined_results$source), col = unique(as.factor(combined_results$source)), pch = 19)
+legend("topright", 
+       legend = unique(combined_results$source), 
+       col = unique(as.factor(combined_results$source)), 
+       pch = 19)
 
 # Calculate R-squared for the Gaussian fit
-gaussian_r_squared <- calculate_gaussian_r_squared(gaussian_fit, combined_results)
+gaussian_r_squared <- calculate_gaussian_r_squared(gaussian_fit, 
+                                                   combined_results)
 
 # Add R-squared and p-value to the plot
-text(10, 1.4, paste("R-squared:", round(gaussian_r_squared, 3), "\nP-value: < 0.005"), pos = 4)
+text(10, 1.4, 
+     paste("R-squared:", round(gaussian_r_squared, 3), 
+           "\nP-value: < 0.005"), 
+     pos = 4)
 
 #===============================================================================
 # IRRADIANCE
