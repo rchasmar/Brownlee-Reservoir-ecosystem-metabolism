@@ -357,6 +357,17 @@ calculate_gaussian_r_squared <- function(model, data) {
 }
 
 #===============================================================================
+# Add gaussian predictions
+#===============================================================================
+
+add_gaussian_predictions <- function(df, model) {
+  day_of_year <- df$doy
+  newdata <- data.frame(day_of_year = day_of_year)
+  df$Kd <- predict(model, newdata = newdata)
+  return(df)
+}
+
+#===============================================================================
 # Function to stage, commit, and push changes to GitHub
 #===============================================================================
 

@@ -433,8 +433,13 @@ for (name in names(dataframes_ts)) {
 list2env(dataframes_ts, envir = .GlobalEnv)
 
 #===============================================================================
-# LIGHT EXTINCTION COEFFICIENT
+# IRRADIANCE
 #===============================================================================
+
+# Apply fill_na_with_solrad function to your dataframes
+ppr286_par <- fill_na_with_solrad(ppr286_solrad, ppr286_par)
+ppr300_par <- fill_na_with_solrad(ppr300_solrad, ppr300_par)
+ppr318_par <- fill_na_with_solrad(ppr318_solrad, ppr318_par)
 
 # Process each dataframe
 results_286 <- process_dataframe(ppr286_prf, ppr286_par)
@@ -493,23 +498,13 @@ gaussian_r_squared <- calculate_gaussian_r_squared(gaussian_fit,
 
 # Add R-squared and p-value to the plot
 text(10, 1.4, 
-     paste("R-squared:", round(gaussian_r_squared, 3), 
-           "\nP-value: < 0.005"), 
+     paste("R-squared:", round(gaussian_r_squared, 3), "\nP-value: < 0.005"), 
      pos = 4)
-
-#===============================================================================
-# IRRADIANCE
-#===============================================================================
-
-# Apply fill_na_with_solrad function to your dataframes
-ppr286_par <- fill_na_with_solrad(ppr286_solrad, ppr286_par)
-ppr300_par <- fill_na_with_solrad(ppr300_solrad, ppr300_par)
-ppr318_par <- fill_na_with_solrad(ppr318_solrad, ppr318_par)
-
+  
 # Iterate over the list and update the time series dataframes
 for (name in names(dataframes_ts)) {
   df <- dataframes_ts[[name]]  # Extract the dataframe by name
-  
+
   # Add 'irr_surface' column based on the dataframe name pattern
   if (grepl("^ppr286_", name)) {
     df <- add_irr_surface_column(df, ppr286_par)
@@ -518,10 +513,16 @@ for (name in names(dataframes_ts)) {
   } else if (grepl("^ppr318_", name)) {
     df <- add_irr_surface_column(df, ppr318_par)
   }
-  
+
+  # Add Gaussian predictions using the combined Gaussian fit model
+  df <- add_gaussian_predictions(df, gaussian_fit)
+
   # Update the dataframe in the list
   dataframes_ts[[name]] <- df
 }
+
+# Update the global environment with the modified dataframes
+list2env(dataframes_ts, envir = .GlobalEnv)
 
 #===============================================================================
 # PUSH TO GITHUB
