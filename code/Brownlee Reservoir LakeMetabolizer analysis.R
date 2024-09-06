@@ -398,6 +398,33 @@ for (name in names(dataframes_ts)) {
 list2env(dataframes_ts, envir = .GlobalEnv)
 
 #===============================================================================
+# K.GAS
+#===============================================================================
+
+# Iterate over the list and update the ppr dataframes
+for (name in names(dataframes_ts)) {
+  df <- dataframes_ts[[name]]  # Extract the dataframe by name
+  
+  # Add 'wnd' column based on the dataframe name pattern
+  if (grepl("^ppr286_", name)) {
+    df <- add_wnd_column(df, ppr286_wnd)
+  } else if (grepl("^ppr300_", name)) {
+    df <- add_wnd_column(df, ppr300_wnd)
+  } else if (grepl("^ppr318_", name)) {
+    df <- add_wnd_column(df, ppr318_wnd)
+  }
+  
+  # Calculate k.gas and add it to the dataframe
+  df <- calculate_kGAS(df)
+  
+  # Update the dataframe in the list
+  dataframes_ts[[name]] <- df
+}
+
+# Update the global environment with the modified dataframes
+list2env(dataframes_ts, envir = .GlobalEnv)
+
+#===============================================================================
 # PUSH TO GITHUB
 #===============================================================================
 

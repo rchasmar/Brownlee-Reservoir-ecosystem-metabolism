@@ -170,9 +170,12 @@ create_plot <- function(df, title) {
   pred <- predict(fit.lm, newdata = newdata)
   
   # Plot the original data
-  plot(df$meta ~ Time, main = title, xlab = "Time", ylab = "Meta", 
-       ylim = c(0, 40), xlim = c(0, 366))
+  plot(df$meta ~ Time, main = title, xlab = "Day of Year", ylab = "Top of Metalimnion (m)", 
+       ylim = c(40, 0), xlim = c(0, 366))
   
+  # Add dashed lines for different sensor depths
+  abline(h = c(1, 3, 6, 10, 15, 21, 30, 40), lty = 'dashed')
+
   # Add the predicted values to the plot
   lines(new_time, pred, col = "red", lwd = 2)
 }
@@ -199,6 +202,41 @@ add_predictions <- function(df, model) {
                         xs = sin(2 * pi * Time / 365.25))
   df$z.mix <- predict(model, newdata = newdata)
   return(df)
+}
+
+#===============================================================================
+# Function to add 'wnd' column from wind speed dataframe to the corresponding 
+# time series dataframe
+# Args:
+#   df: A dataframe containing the time series data.
+#   wnd_df: A dataframe containing the wind speed data.
+# Returns:
+#   The updated time series dataframe with the 'wnd' column added.
+#===============================================================================
+
+add_wnd_column <- function(df, wnd_df) {
+  df$wnd <- wnd_df$value  # Add 'wnd' column from wnd_df to df
+  return(df)  # Return the updated dataframe
+}
+
+#===============================================================================
+# Function to calculate k600 and k.gas and add them to the dataframe
+# Args:
+#   df: A dataframe containing the time series data.
+# Returns:
+#   The updated dataframe with 'k.gas' column added.
+#===============================================================================
+
+calculate_kGAS <- function(df) {
+  k600_df <- k.cole(df)  # Calculate k600 using the k.cole function
+  
+  kGAS_df <- k600.2.kGAS(
+    data.frame(k600_df, wtr = df$wtr)
+  )  # Convert k600 to k.gas using water temperature
+  
+  df$k.gas <- kGAS_df[, 2]  # Add 'k.gas' column to df
+  
+  return(df)  # Return the updated dataframe
 }
 
 #===============================================================================
