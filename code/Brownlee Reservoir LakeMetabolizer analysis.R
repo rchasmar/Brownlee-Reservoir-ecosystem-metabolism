@@ -295,7 +295,7 @@ for (name in names(dataframes_ts)) {
   # Compute do.percent
   df$do.percent <- (df$'do.obs' / df$'do.sat') * 100
   
-  # Set do.obs and do.sat to NA where do.percent > 200
+  # Set do.obs and do.sat to NA where do.percent > 300
   idx <- which(df$do.percent > 200)
   df[idx, c('do.obs', 'do.percent')] <- NA  
 
@@ -522,6 +522,24 @@ for (name in names(dataframes_ts)) {
   
   # Add PAR at different depths using the extracted depth
   df <- add_par_at_depths(df, depth)
+
+  # Update the dataframe in the list
+  dataframes_ts[[name]] <- df
+}
+
+# Update the global environment with the modified dataframes
+list2env(dataframes_ts, envir = .GlobalEnv)
+
+#===============================================================================
+# Metabolism
+#===============================================================================
+
+# Iterate over the list and update the time series dataframes
+for (name in names(dataframes_ts)) {
+  df <- dataframes_ts[[name]]  # Extract the dataframe by name
+
+  # Select the specified columns
+  df <- df[, c('datetime', 'do.obs', 'do.sat', 'k.gas', 'z.mix', 'irr', 'wtr')]
 
   # Update the dataframe in the list
   dataframes_ts[[name]] <- df
