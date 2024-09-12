@@ -1,0 +1,85 @@
+
+# Iterate over each dataframe in the list
+for (name in names(dataframes_ts)) {
+
+  df <- dataframes_ts[[name]]
+
+  # Combine the retrieved variables into a single dataframe
+  data <- data.frame(
+    datetime = df$'datetime',
+    do.obs = df$'do.obs',
+    do.sat = df$'do.sat',
+    k.gas = df$'k.gas',
+    z.mix = df$'z.mix',
+    irr = df$'irr',
+    wtr = df$'wtr'
+  )
+
+  # Extract the date component from the datetime column
+  data$date <- as.Date(data$'datetime', tz = "America/Denver")
+
+  clean_data <- na.omit(data)
+
+  # Split the data into subsets by date
+  split_data <- split(clean_data, clean_data$'date')
+
+  # Initialize a dataframe to store metabolism model results
+  model_results <- data.frame(Date = as.Date(character()),
+                              GPP = numeric(),
+                              R = numeric(),
+                              NEP = numeric(),
+                              stringsAsFactors = FALSE)
+  
+  # Model ecosystem metabolism for each date with complete data
+  for (date in names(split_data)) {
+    # Select data for the current date
+    current_data <- split_data[[date]]
+
+    # Apply the metabolism model
+    model_output <- metab.mle(current_data$do.obs, 
+                              current_data$do.sat, 
+                              current_data$k.gas, 
+                              current_data$z.mix, 
+                              current_data$irr, 
+                              current_data$wtr, 
+                              error.type = "OE")
+
+    # Extract Gross Primary Production (GPP), Respiration (R), and Net Ecosystem Production (NEP) from the model output
+    gpp <- model_output$metab[[1]]
+    r <- model_output$metab[[2]]
+    nep <- model_output$metab[[3]]
+    
+    # Compile the results into a row
+    row <- data.frame(Date = date, GPP = gpp, R = r, NEP = nep)
+    
+    # Append the row to the results dataframe
+    model_results <- rbind(model_results, row)
+  }
+  
+  # Rename the columns of the results dataframe
+  colnames(model_results) <- c("Date", "GPP", "R", "NEP")
+  
+  # Ensure the 'Date' column is of Date type
+  model_results$Date <- as.Date(model_results$Date)
+  
+  # Filter the results to exclude implausible values
+  filtered_model_results <- model_results[model_results$R <= 0 & model_results$GPP >= 0 & 
+                                          model_results$R >= -50 & model_results$GPP <= 30, ]
+
+  date <- seq(as.Date("2017-01-01"), as.Date("2024-01-01"), by = "year")
+
+  # Open a PNG device
+  png(filename = paste0(name, "_metabolism_plot.png"), width = 2500, height = 1750, pointsize = 50)
+
+  # Create the plot
+  plot(GPP ~ Date, data = filtered_model_results, type = 'h', lwd = 2, col = 'darkgreen', xlim = c(date[1], date[8]), ylim = c(min(filtered_model_results$R), -min(filtered_model_results$R)), ylab = "Metabolism", main = name)
+  abline(h = 0)
+  lines(R ~ Date, data = filtered_model_results, type = 'h', lwd = 2, col = 'firebrick')
+  # Add axis and grid lines
+  axis.Date(1, at = seq(min(date), max(date), by = "year"), format = "%Y")
+  abline(v = seq(min(date), max(date), by = "year"), lty = 'dashed')
+
+  # Close the PNG device
+  dev.off()
+}
+
