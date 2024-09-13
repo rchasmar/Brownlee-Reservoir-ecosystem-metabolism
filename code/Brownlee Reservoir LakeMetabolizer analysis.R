@@ -374,6 +374,9 @@ create_plot(ppr286_meta, "PPR286 Meta Data with Fitted and Predicted Values")
 create_plot(ppr300_meta, "PPR300 Meta Data with Fitted and Predicted Values")
 create_plot(ppr318_meta, "PPR318 Meta Data with Fitted and Predicted Values")
 
+# Set up the plotting area for 1x1 layout
+par(mfrow = c(1, 1))
+
 # Fit models for the meta dataframes
 fit_286 <- fit_model(ppr286_meta)
 fit_300 <- fit_model(ppr300_meta)
