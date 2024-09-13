@@ -1,0 +1,56 @@
+create_plot <- function(df, title) {
+  # Convert datetime to numeric DOY
+  Time <- as.numeric(df$datetime)
+  
+  # Create cosine and sine terms for the model
+  xc <- cos(2 * pi * Time / 31557600)
+  xs <- sin(2 * pi * Time / 31557600)
+  
+  # Fit the linear model
+  fit.lm <- lm(df$meta ~ xc + xs)
+  
+  # Generate a sequence of time points for prediction (1 to 31622400)
+  new_time <- seq(from = min(as.numeric(df$datetime)), to = max(as.numeric(df$datetime)), by = 86400)
+  
+  # Create a new dataframe for prediction
+  newdata <- data.frame(Time = new_time,
+                        xc = cos(2 * pi * new_time / 31557600),
+                        xs = sin(2 * pi * new_time / 31557600))
+  
+  # Find predictions for the new time series
+  pred <- predict(fit.lm, newdata = newdata)
+  
+  # Plot the original data
+  plot(df$meta ~ Time, main = title, xlab = "Day of Year", 
+       ylab = "Top of Metalimnion (m)", ylim = c(40, 0))
+  
+  # Add dashed lines for different sensor depths
+  abline(h = c(1, 3, 6, 10, 15, 21, 30, 40), lty = 'dashed')
+
+  # Add the predicted values to the plot
+  lines(new_time, pred, col = "red", lwd = 2)
+}
+
+# Apply smooth.spline and directly get the fitted values
+spar <- 0.0
+ppr286_meta$meta <- smooth.spline(as.numeric(ppr286_meta$datetime), 
+                                  ppr286_meta$top, spar = spar)$y
+ppr300_meta$meta <- smooth.spline(as.numeric(ppr300_meta$datetime), 
+                                  ppr300_meta$top, spar = spar)$y
+ppr318_meta$meta <- smooth.spline(as.numeric(ppr318_meta$datetime), 
+                                  ppr318_meta$top, spar = spar)$y
+
+create_plot(ppr286_meta, "PPR286 Meta Data with Fitted and Predicted Values")
+
+
+
+
+
+
+
+par(mfrow = c(1, 3))
+plot(top ~ datetime, data = ppr286_meta, ylim = c(40, 0))
+plot(meta ~ datetime, data = ppr300_meta)
+plot(meta ~ datetime, data = ppr318_meta)
+
+

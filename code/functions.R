@@ -159,7 +159,7 @@ create_plot <- function(df, title) {
   fit.lm <- lm(df$meta ~ xc + xs)
   
   # Generate a sequence of time points for prediction (1 to 366)
-  new_time <- seq(1, 366, by = 1)
+  new_time <- seq(from = 1, to = 366, by = 1)
   
   # Create a new dataframe for prediction
   newdata <- data.frame(Time = new_time,
@@ -170,8 +170,8 @@ create_plot <- function(df, title) {
   pred <- predict(fit.lm, newdata = newdata)
   
   # Plot the original data
-  plot(df$meta ~ Time, main = title, xlab = "Day of Year", ylab = "Top of Metalimnion (m)", 
-       ylim = c(40, 0), xlim = c(0, 366))
+  plot(df$meta ~ Time, main = title, xlab = "Day of Year", 
+       ylab = "Top of Metalimnion (m)", ylim = c(40, 0), xlim = c(0, 366))
   
   # Add dashed lines for different sensor depths
   abline(h = c(1, 3, 6, 10, 15, 21, 30, 40), lty = 'dashed')

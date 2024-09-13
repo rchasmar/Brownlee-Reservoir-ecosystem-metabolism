@@ -342,9 +342,10 @@ ppr300_wtr <- data.frame(datetime, ppr300_wtr)
 ppr318_wtr <- data.frame(datetime, ppr318_wtr)
 
 # Apply ts.meta.depths to each dataframe with na.rm = TRUE
-ppr286_meta <- ts.meta.depths(ppr286_wtr, na.rm = TRUE)
-ppr300_meta <- ts.meta.depths(ppr300_wtr, na.rm = TRUE)
-ppr318_meta <- ts.meta.depths(ppr318_wtr, na.rm = TRUE)
+slope = 0.2
+ppr286_meta <- ts.meta.depths(ppr286_wtr, slope = slope, na.rm = TRUE)
+ppr300_meta <- ts.meta.depths(ppr300_wtr, slope = slope, na.rm = TRUE)
+ppr318_meta <- ts.meta.depths(ppr318_wtr, slope = slope, na.rm = TRUE)
 
 # Apply the function to each of your final dataframes
 ppr286_meta <- remove_non_finite_top(ppr286_meta)
@@ -360,7 +361,7 @@ ppr300_meta$meta <- smooth.spline(as.numeric(ppr300_meta$datetime),
 ppr318_meta$meta <- smooth.spline(as.numeric(ppr318_meta$datetime), 
                                   ppr318_meta$top, spar = spar)$y
 
-# Add DOY (Dheaday of Year) column to each dataframe
+# Add DOY (Day of Year) column to each dataframe
 ppr286_meta$doy <- as.numeric(format(ppr286_meta$datetime, "%j"))
 ppr300_meta$doy <- as.numeric(format(ppr300_meta$datetime, "%j"))
 ppr318_meta$doy <- as.numeric(format(ppr318_meta$datetime, "%j"))
