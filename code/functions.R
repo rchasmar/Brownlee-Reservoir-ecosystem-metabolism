@@ -1,5 +1,13 @@
 #===============================================================================
-# Function to interpolate gaps of 10 or fewer NAs using linear interpolation
+# Function Name: interpolate_gaps_linear
+# Description: This function interpolates gaps of 10 or fewer NAs in a specified 
+#              column of a dataframe using linear interpolation.
+# Parameters: 
+#   - data: A dataframe containing the data.
+#   - column: The name of the column to interpolate (as a string).
+#   - max_gap: The maximum number of consecutive NAs to interpolate.
+# Returns: A dataframe with the specified column's NAs interpolated where the 
+#          gap is 10 or fewer.
 #===============================================================================
 
 interpolate_gaps_linear <- function(data, column, max_gap) {
@@ -48,7 +56,15 @@ interpolate_gaps_linear <- function(data, column, max_gap) {
 }
 
 #===============================================================================
-# Function to interpolate gaps of 10 or fewer NAs using spline interpolation
+# Function Name: interpolate_gaps_spline
+# Description: This function interpolates gaps of 10 or fewer NAs in a specified 
+#              column of a dataframe using spline interpolation.
+# Parameters: 
+#   - data: A dataframe containing the data.
+#   - column: The name of the column to interpolate (as a string).
+#   - max_gap: The maximum number of consecutive NAs to interpolate.
+# Returns: A dataframe with the specified column's NAs interpolated where the 
+#          gap is 10 or fewer.
 #===============================================================================
 
 interpolate_gaps_spline <- function(data, column, max_gap) {
@@ -87,7 +103,7 @@ interpolate_gaps_spline <- function(data, column, max_gap) {
     start_idx <- end_idx + 1
   }
   
-  # Interpolate only the marked gaps using spline
+  # Interpolate only the marked gaps using spline interpolation
   interpolated_values <- spline(seq_along(data[[column]]), 
                                 data[[column]], 
                                 xout = seq_along(data[[column]]))$y
@@ -97,7 +113,13 @@ interpolate_gaps_spline <- function(data, column, max_gap) {
 }
 
 #===============================================================================
-# Function to subset dataframe
+# Function Name: subset_minutes
+# Description: This function subsets a dataframe to include only rows where the 
+#              'datetime' column's minute value is a multiple of 10.
+# Parameters: 
+#   - df: A dataframe containing a 'datetime' column.
+# Returns: A dataframe with rows where the 'datetime' column's minute value is 
+#          a multiple of 10.
 #===============================================================================
 
 subset_minutes <- function(df) {
@@ -105,8 +127,12 @@ subset_minutes <- function(df) {
 }
 
 #===============================================================================
-# Function to compute 100% saturation oxygen concentration at nonstandard 
-# pressure from temperature (K)
+# Function Name: compute_oxygen_saturation
+# Description: This function computes the 100% saturation oxygen concentration 
+#              at nonstandard pressure from temperature (in Kelvin).
+# Parameters: 
+#   - x: Temperature in Kelvin.
+# Returns: The 100% saturation oxygen concentration at nonstandard pressure.
 #===============================================================================
 
 compute_oxygen_saturation <- function(x) {
@@ -121,7 +147,15 @@ compute_oxygen_saturation <- function(x) {
 }
 
 #===============================================================================
-#
+# Function Name: remove_do_anomalies
+# Description: This function removes anomalies in dissolved oxygen (DO) 
+#              observations by setting values to NA if the difference between 
+#              consecutive observations exceeds a specified threshold.
+# Parameters: 
+#   - df: A dataframe containing the DO observations.
+#   - threshold: The maximum allowed difference between consecutive DO 
+#                observations. Defaults to 2.
+# Returns: A dataframe with anomalies in DO observations removed.
 #===============================================================================
 
 remove_do_anomalies <- function(df, threshold = 2) {
@@ -132,7 +166,33 @@ remove_do_anomalies <- function(df, threshold = 2) {
 }
 
 #===============================================================================
-# Function to remove rows where 'top' is not a real number
+# Function Name: extract_wtr
+# Description: This function extracts and renames 'wtr' columns from a list of 
+#              dataframes.
+# Parameters: 
+#   - df_list: A list of dataframes containing the 'wtr' columns.
+# Returns: A dataframe with the combined 'wtr' columns, renamed based on the 
+#          original dataframe names.
+#===============================================================================
+
+extract_wtr <- function(df_list) {
+  wtr_list <- lapply(df_list, function(df) df$wtr)  # Extract 'wtr' columns
+  names(wtr_list) <- sapply(names(df_list), function(name) {  # Rename columns
+    parts <- unlist(strsplit(name, "_"))
+    paste0("wtr_", as.numeric(parts[2]))
+  })
+  wtr_df <- do.call(cbind, wtr_list)  # Combine columns into a dataframe
+  return(wtr_df)  # Return the combined dataframe
+}
+
+#===============================================================================
+# Function Name: remove_non_finite_top
+# Description: This function removes rows from a dataframe where the 'top' 
+#              column contains non-finite values (e.g., NA, NaN, Inf).
+# Parameters: 
+#   - df: A dataframe containing the 'top' column.
+# Returns: A dataframe with rows removed where the 'top' column is not a real 
+#          number.
 #===============================================================================
 
 remove_non_finite_top <- function(df) {
@@ -141,10 +201,14 @@ remove_non_finite_top <- function(df) {
 }
 
 #===============================================================================
-# Function to perform the analysis and create the plot
-# Parameters:
-#   df: Dataframe containing the data
-#   title: Title for the plot
+# Function Name: create_plot
+# Description: This function performs analysis and creates a plot of the top of 
+#              the metalimnion over the day of the year, including predictions 
+#              based on a linear model with cosine and sine terms.
+# Parameters: 
+#   - df: A dataframe containing the data.
+#   - title: A title for the plot.
+# Returns: A plot showing the original data and the predicted values.
 #===============================================================================
 
 create_plot <- function(df, title) {
@@ -181,7 +245,14 @@ create_plot <- function(df, title) {
 }
 
 #===============================================================================
-# Fit models for the meta dataframes
+# Function Name: fit_model
+# Description: This function fits a linear model to the 'meta' column of a 
+#              dataframe using cosine and sine terms based on the day of the
+#              year.
+# Parameters: 
+#   - df: A dataframe containing the 'meta' column and 'doy' (day of year)
+#         column.
+# Returns: A linear model fitted to the 'meta' column.
 #===============================================================================
 
 fit_model <- function(df) {
@@ -192,7 +263,14 @@ fit_model <- function(df) {
 }
 
 #===============================================================================
-# Function to predict and add z.mix column
+# Function Name: add_predictions
+# Description: This function predicts and adds a 'z.mix' column to a dataframe 
+#              using a provided linear model.
+# Parameters: 
+#   - df: A dataframe containing the 'doy' (day of year) column.
+#   - model: A linear model used for prediction.
+# Returns: A dataframe with an added 'z.mix' column containing the predicted
+#          values.
 #===============================================================================
 
 add_predictions <- function(df, model) {
@@ -205,13 +283,13 @@ add_predictions <- function(df, model) {
 }
 
 #===============================================================================
-# Function to add 'wnd' column from wind speed dataframe to the corresponding 
-# time series dataframe
-# Args:
-#   df: A dataframe containing the time series data.
-#   wnd_df: A dataframe containing the wind speed data.
-# Returns:
-#   The updated time series dataframe with the 'wnd' column added.
+# Function Name: add_wnd_column
+# Description: This function adds a 'wnd' column from a wind speed dataframe to 
+#              the corresponding time series dataframe.
+# Parameters: 
+#   - df: A dataframe containing the time series data.
+#   - wnd_df: A dataframe containing the wind speed data.
+# Returns: The updated time series dataframe with the 'wnd' column added.
 #===============================================================================
 
 add_wnd_column <- function(df, wnd_df) {
@@ -220,11 +298,12 @@ add_wnd_column <- function(df, wnd_df) {
 }
 
 #===============================================================================
-# Function to calculate k600 and k.gas and add them to the dataframe
-# Args:
-#   df: A dataframe containing the time series data.
-# Returns:
-#   The updated dataframe with 'k.gas' column added.
+# Function Name: calculate_kGAS
+# Description: This function calculates k600 and k.gas and adds them to the 
+#              dataframe.
+# Parameters: 
+#   - df: A dataframe containing the time series data.
+# Returns: The updated dataframe with the 'k.gas' column added.
 #===============================================================================
 
 calculate_kGAS <- function(df) {
@@ -240,7 +319,14 @@ calculate_kGAS <- function(df) {
 }
 
 #===============================================================================
-# Function to fill NA values in 'par' dataframe using 'solrad' dataframe
+# Function Name: fill_na_with_solrad
+# Description: This function fills NA values in the 'par' dataframe using values 
+#              from the 'solrad' dataframe, multiplied by a factor of 1.93.
+# Parameters: 
+#   - solrad_df: A dataframe containing the 'solrad' values.
+#   - par_df: A dataframe containing the 'par' values.
+# Returns: The updated 'par' dataframe with NA values filled using 'solrad'
+#          values.
 #===============================================================================
 
 fill_na_with_solrad <- function(solrad_df, par_df) {
@@ -254,13 +340,14 @@ fill_na_with_solrad <- function(solrad_df, par_df) {
 }
 
 #===============================================================================
-# Function to add 'irr_surface' values from irradiance dataframes to
-# corresponding time series dataframes
-# Args:
-#   df: A dataframe containing the time series data.
-#   irr_df: A dataframe containing the irradiance data.
-# Returns:
-#   The updated time series dataframe with the 'irr_surface' column added.
+# Function Name: add_irr_surface_column
+# Description: This function adds 'irr_surface' values from irradiance 
+#              dataframes to corresponding time series dataframes.
+# Parameters: 
+#   - df: A dataframe containing the time series data.
+#   - irr_df: A dataframe containing the irradiance data.
+# Returns: The updated time series dataframe with the 'irr_surface' column
+#          added.
 #===============================================================================
 
 add_irr_surface_column <- function(df, irr_df) {
@@ -269,7 +356,13 @@ add_irr_surface_column <- function(df, irr_df) {
 }
 
 #===============================================================================
-# Function to find the closest datetime
+# Function Name: find_closest_datetime
+# Description: This function finds the closest datetime to a target datetime 
+#              from a vector of datetimes.
+# Parameters: 
+#   - target_datetime: The target datetime to compare against.
+#   - datetime_vector: A vector of datetimes to search through.
+# Returns: The datetime from the vector that is closest to the target datetime.
 #===============================================================================
 
 find_closest_datetime <- function(target_datetime, datetime_vector) {
@@ -279,7 +372,14 @@ find_closest_datetime <- function(target_datetime, datetime_vector) {
 }
 
 #===============================================================================
-# Function to calculate R-squared
+# Function Name: calculate_r_squared
+# Description: This function calculates the R-squared value for a given model 
+#              and dataset.
+# Parameters: 
+#   - model: The linear model for which to calculate R-squared.
+#   - data: A dataframe containing the observed values.
+# Returns: The R-squared value indicating the proportion of variance explained 
+#          by the model.
 #===============================================================================
 
 calculate_r_squared <- function(model, data) {
@@ -292,7 +392,13 @@ calculate_r_squared <- function(model, data) {
 }
 
 #===============================================================================
-# Function to process dataframes
+# Function Name: process_dataframe
+# Description: This function processes dataframes by fitting a nonlinear model 
+#              to irradiance data and calculating Kd and R-squared values.
+# Parameters: 
+#   - prf_df: A dataframe containing profile data.
+#   - par_df: A dataframe containing PAR data.
+# Returns: A dataframe with Kd and R-squared values for each date.
 #===============================================================================
 
 process_dataframe <- function(prf_df, par_df) {
@@ -302,7 +408,8 @@ process_dataframe <- function(prf_df, par_df) {
   for (date in names(split_data)) {
     df <- split_data[[date]]
     first_datetime <- df$datetime[1]
-    closest_datetime <- find_closest_datetime(first_datetime, par_df$datetime)
+    closest_datetime <- find_closest_datetime(first_datetime, 
+                                              par_df$datetime)
     I0 <- par_df$value[par_df$datetime == closest_datetime]
     
     if (is.na(I0) || is.infinite(I0)) {
@@ -321,11 +428,14 @@ process_dataframe <- function(prf_df, par_df) {
     
     Kd_value <- coef(fit)["Kd"]
     r_squared <- calculate_r_squared(fit, df)
-    results_list[[date]] <- data.frame(date = as.Date(date), Kd = Kd_value, R_squared = r_squared)
+    results_list[[date]] <- data.frame(date = as.Date(date), 
+                                       Kd = Kd_value, 
+                                       R_squared = r_squared)
   }
   
   results_df <- do.call(rbind, results_list)
-  results_df$R_squared <- as.numeric(format(results_df$R_squared, scientific = FALSE))
+  results_df$R_squared <- as.numeric(format(results_df$R_squared, 
+                                            scientific = FALSE))
   results_df$day_of_year <- yday(results_df$date)
   results_df <- results_df %>%
     mutate(Kd = ifelse(R_squared < 0.9 | Kd > 1.5, NA, Kd),
@@ -336,7 +446,12 @@ process_dataframe <- function(prf_df, par_df) {
 }
 
 #===============================================================================
-# Function to convert day_of_year to date format without year for axis labels
+# Function Name: day_of_year_to_month
+# Description: This function converts a day of the year to a month format 
+#              without the year, suitable for axis labels.
+# Parameters: 
+#   - day_of_year: An integer representing the day of the year.
+# Returns: The month corresponding to the given day of the year.
 #===============================================================================
 
 day_of_year_to_month <- function(day_of_year) {
@@ -344,7 +459,14 @@ day_of_year_to_month <- function(day_of_year) {
 }
 
 #===============================================================================
-# Calculate R-squared for Gaussian fit
+# Function Name: calculate_gaussian_r_squared
+# Description: This function calculates the R-squared value for a Gaussian fit 
+#              model and dataset.
+# Parameters: 
+#   - model: The Gaussian model for which to calculate R-squared.
+#   - data: A dataframe containing the observed Kd values.
+# Returns: The R-squared value indicating the proportion of variance explained 
+#          by the model.
 #===============================================================================
 
 calculate_gaussian_r_squared <- function(model, data) {
@@ -357,7 +479,14 @@ calculate_gaussian_r_squared <- function(model, data) {
 }
 
 #===============================================================================
-# Add gaussian predictions
+# Function Name: add_gaussian_predictions
+# Description: This function adds Gaussian predictions to a dataframe using a 
+#              provided model.
+# Parameters: 
+#   - df: A dataframe containing the day of year ('doy') column.
+#   - model: A Gaussian model used for prediction.
+# Returns: The updated dataframe with the 'Kd' column containing the predicted 
+#          values.
 #===============================================================================
 
 add_gaussian_predictions <- function(df, model) {
@@ -368,7 +497,14 @@ add_gaussian_predictions <- function(df, model) {
 }
 
 #===============================================================================
-# Add PAR at depths
+# Function Name: add_par_at_depths
+# Description: This function calculates and adds PAR (Photosynthetically Active 
+#              Radiation) at specified depths to a dataframe.
+# Parameters: 
+#   - df: A dataframe containing 'irr_surface' and 'Kd' columns.
+#   - depth: The depth at which to calculate PAR.
+# Returns: The updated dataframe with the 'irr' column containing PAR values at 
+#          the specified depth.
 #===============================================================================
 
 add_par_at_depths <- function(df, depth) {
@@ -378,7 +514,13 @@ add_par_at_depths <- function(df, depth) {
 }
 
 #===============================================================================
-# Function to stage, commit, and push changes to GitHub
+# Function Name: automate_git
+# Description: This function stages, commits, and pushes changes to a GitHub 
+#              repository using system commands.
+# Parameters: 
+#   - commit_message: A message for the commit. Defaults to "Automated commit 
+#                     from R script".
+# Returns: None.
 #===============================================================================
 
 automate_git <- function(commit_message = "Automated commit from R script") {

@@ -316,25 +316,14 @@ list2env(dataframes_ts, envir = .GlobalEnv)
 # Extract the datetime column from one of the dataframes
 datetime <- dataframes_ts[[1]]$datetime
 
-# Function to extract and rename 'wtr' columns
-extract_wtr <- function(df_list, prefix) {
-  wtr_list <- lapply(df_list, function(df) df$wtr)
-  names(wtr_list) <- sapply(names(df_list), function(name) {
-    parts <- unlist(strsplit(name, "_"))
-    paste0("wtr_", as.numeric(parts[2]))
-  })
-  wtr_df <- do.call(cbind, wtr_list)
-  return(wtr_df)
-}
-
 # Extract and combine 'wtr' columns for each prefix
 ppr286_dfs <- dataframes_ts[grep("ppr286", names(dataframes_ts))]
 ppr300_dfs <- dataframes_ts[grep("ppr300", names(dataframes_ts))]
 ppr318_dfs <- dataframes_ts[grep("ppr318", names(dataframes_ts))]
 
-ppr286_wtr <- extract_wtr(ppr286_dfs, "ppr286")
-ppr300_wtr <- extract_wtr(ppr300_dfs, "ppr300")
-ppr318_wtr <- extract_wtr(ppr318_dfs, "ppr318")
+ppr286_wtr <- extract_wtr(ppr286_dfs)
+ppr300_wtr <- extract_wtr(ppr300_dfs)
+ppr318_wtr <- extract_wtr(ppr318_dfs)
 
 # Combine datetime with the new 'wtr' dataframes
 ppr286_wtr <- data.frame(datetime, ppr286_wtr)
@@ -374,7 +363,7 @@ create_plot(ppr286_meta, "PPR286 Meta Data with Fitted and Predicted Values")
 create_plot(ppr300_meta, "PPR300 Meta Data with Fitted and Predicted Values")
 create_plot(ppr318_meta, "PPR318 Meta Data with Fitted and Predicted Values")
 
-# Set up the plotting area for 1x1 layout
+# Reset the plotting area to 1x1 layout
 par(mfrow = c(1, 1))
 
 # Fit models for the meta dataframes
