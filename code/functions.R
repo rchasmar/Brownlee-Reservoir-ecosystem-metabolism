@@ -1,4 +1,37 @@
 #===============================================================================
+# Function Name: split_by_var_and_rm
+# Description: This function splits the buoy_weather dataframe by a specified 
+#              variable and further splits the resulting data by river mile.
+# Parameters: 
+#   - var: The name of the variable to split by (as a string).
+#   - rm: A vector of river miles to split the data by.
+# Returns: A named list where each element corresponds to the data for a specific 
+#          river mile.
+#===============================================================================
+
+# Function to split data by variable and river mile
+split_by_var_and_rm <- function(
+                         var,
+                         rm
+                       ) {
+                         var_data <- split(
+                                       x = buoy_weather,
+                                       f = buoy_weather$Variable
+                                     )[[var]]
+                         split_list <- split(
+                                         x = var_data,
+                                         f = var_data$Location
+                                       )
+                         setNames(
+                           object = lapply(
+                                      X = rm,
+                                      FUN = function(mile) split_list[[mile]]
+                                    ),
+                           nm = rm
+                         )
+                       }
+
+#===============================================================================
 # Function Name: interpolate_gaps_linear
 # Description: This function interpolates gaps of 10 or fewer NAs in a specified 
 #              column of a dataframe using linear interpolation.
@@ -158,12 +191,97 @@ compute_oxygen_saturation <- function(x) {
 # Returns: A dataframe with anomalies in DO observations removed.
 #===============================================================================
 
-remove_do_anomalies <- function(df, threshold = 2) {
+remove_do_anomalies <- function(df, threshold) {
   df %>%
     mutate(do_diff = c(NA, diff(do.obs)), 
            do.obs = ifelse(abs(do_diff) > threshold, NA, do.obs)) %>% 
     select(-do_diff)
 }
+
+#===============================================================================
+# Function Name: process_data
+# Description: This function processes time series data by extracting and 
+#              combining 'wtr' columns, subsetting based on date range, and 
+#              applying various transformations.
+# Parameters: 
+#   - prefix: A string to match the names of dataframes in the list.
+#   - dataframes_ts: A list of dataframes containing time series data.
+#   - datetime: A vector of datetime values.
+#   - start_date: The start date for subsetting the data (optional).
+#   - end_date: The end date for subsetting the data (optional).
+#   - slope: A parameter for the ts.meta.depths function.
+#   - spar: A smoothing parameter for the smooth.spline function.
+#   - subset_data: A logical value indicating whether to subset the data.
+# Returns: A dataframe with processed metadata including the metalimnion top 
+#          and day of year (DOY).
+#===============================================================================
+
+process_data <- function(
+                  prefix,
+                  dataframes_ts,
+                  datetime,
+                  start_date,
+                  end_date,
+                  slope,
+                  spar,
+                  subset_data
+                ) {
+  
+                  # Extract and combine 'wtr' columns for the given prefix
+                  dfs <- dataframes_ts[grep(
+                                         pattern = prefix,
+                                         x = names(dataframes_ts)
+                                       )]
+                  wtr <- data.frame(
+                           datetime,
+                           extract_wtr(
+                             df_list = dfs
+                           )
+                         )
+  
+                  # Subset the data based on the provided date range (Optional)
+                  if (subset_data &&
+                      !is.null(x = start_date) &&
+                      !is.null(x = end_date)) {
+                    wtr <- wtr[wtr$datetime >= as.POSIXct(
+                                                 x = start_date,
+                                                 tz = "America/Denver"
+                                               ) & 
+                               wtr$datetime <= as.POSIXct(
+                                                 x = end_date,
+                                                 tz = "America/Denver"
+                                               ), ]
+                  }
+  
+                  # Apply ts.meta.depths with na.rm = TRUE
+                  meta <- ts.meta.depths(
+                            wtr = wtr,
+                            slope = slope,
+                            na.rm = TRUE
+                          )
+  
+                  # Apply function to remove non-real values for metalimnion top
+                  meta <- remove_non_finite_top(
+                            df = meta
+                          )
+  
+                  # Apply smooth.spline and get the fitted values
+                  meta$meta <- smooth.spline(
+                                 x = as.numeric(meta$datetime),
+                                 y = meta$top,
+                                 spar = spar
+                               )$y
+  
+                  # Add DOY (Day of Year) column
+                  meta$doy <- as.numeric(
+                                format(
+                                  x = meta$datetime,
+                                  format = "%j"
+                                )
+                              )
+  
+                  return(meta)
+                }
 
 #===============================================================================
 # Function Name: extract_wtr
