@@ -763,19 +763,19 @@ list2env(
 
 # Create lists of your dataframes and their names
 solrad_list <- list(
-                 ppr286_solrad = ppr286_solrad,
-                 ppr300_solrad = ppr300_solrad,
-                 ppr318_solrad = ppr318_solrad
+                 ppr286_solrad,
+                 ppr300_solrad,
+                 ppr318_solrad
                )
 par_list <- list(
-              ppr286_par = ppr286_par,
-              ppr300_par = ppr300_par,
-              ppr318_par = ppr318_par
+              ppr286_par,
+              ppr300_par,
+              ppr318_par
             )
 prf_list <- list( 
-              ppr286_prf = ppr286_prf,
-              ppr300_prf = ppr300_prf,
-              ppr318_prf = ppr318_prf
+              ppr286_prf,
+              ppr300_prf,
+              ppr318_prf
             )
 names_list <- c("ppr286",
                 "ppr300",
@@ -788,6 +788,9 @@ par_list <- mapply(
               par_df = par_list,
               SIMPLIFY = FALSE
             )
+
+# Restore original names
+names(par_list) <- c("ppr286_par", "ppr300_par", "ppr318_par")
 
 # Process each dataframe
 results_list <- mapply(
