@@ -1,0 +1,47 @@
+library(zoo)
+
+# Assuming 'ppr286_01' is your dataframe and 'datetime' is the time column
+ppr286_01_interpolated <- ppr286_01
+ppr286_01_interpolated[-1] <- lapply(ppr286_01[-1], function(x) na.approx(x, xout = ppr286_01$datetime, na.rm = FALSE))
+
+# Create a new dataframe with NA values replaced by 1
+ppr286_01_no_na <- ppr286_01_complete
+ppr286_01_no_na[is.na(ppr286_01_no_na)] <- 1
+
+metab(
+  data = ppr286_01,
+  method = "mle",
+  wtr.name = "wtr",
+  irr.name = "irr",
+  do.obs.name = "do.obs",
+  do.sat.name = "do.sat",
+  z.mix.name = "z.mix",
+  k.gas.name = "k.gas"
+)
+
+
+# Step 1: Identify dates with exactly 144 complete rows
+complete_dates <- ppr286_01 %>%
+    filter(complete.cases(.)) %>%
+    group_by(Date) %>%
+    summarise(count = n()) %>%
+    filter(count == 144) %>%
+    pull(Date)
+
+filtered_df <- ppr286_01 %>%
+    filter(Date %in% complete_dates)
+
+# Step 2: Choose one specific date with complete data
+specific_date <- complete_dates[c(1, 2, 3, 4, 5)]  # You can change the index to select a different date
+
+# Step 3: Subset the original dataframe for this specific date
+one_day_df <- ppr286_01 %>%
+    filter(Date == specific_date)
+
+metab(
+  data = filtered_df,
+  method = "mle",
+)
+
+
+
