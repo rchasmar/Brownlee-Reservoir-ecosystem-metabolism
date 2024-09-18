@@ -763,19 +763,19 @@ list2env(
 
 # Create lists of your dataframes and their names
 solrad_list <- list(
-                 ppr286_solrad,
-                 ppr300_solrad,
-                 ppr318_solrad
+                 ppr286_solrad = ppr286_solrad,
+                 ppr300_solrad = ppr300_solrad,
+                 ppr318_solrad = ppr318_solrad
                )
 par_list <- list(
-              ppr286_par,
-              ppr300_par,
-              ppr318_par
+              ppr286_par = ppr286_par,
+              ppr300_par = ppr300_par,
+              ppr318_par = ppr318_par
             )
 prf_list <- list( 
-              ppr286_prf,
-              ppr300_prf,
-              ppr318_prf
+              ppr286_prf = ppr286_prf,
+              ppr300_prf = ppr300_prf,
+              ppr318_prf = ppr318_prf
             )
 names_list <- c("ppr286",
                 "ppr300",
@@ -935,7 +935,7 @@ for (name in names(dataframes_ts)) {
       )) {
     df <- add_irr_surface_column(
             df = df,
-            irr_df = ppr286_par
+            irr_df = par_list[["ppr286_par"]]
           )
   } else if (grepl(
                pattern = "^ppr300_",
@@ -943,7 +943,7 @@ for (name in names(dataframes_ts)) {
              )) {
       df <- add_irr_surface_column(
               df = df,
-              irr_df = ppr300_par
+              irr_df = par_list[["ppr300_par"]]
             )
     } else if (grepl(
                  pattern = "^ppr318_",
@@ -951,7 +951,7 @@ for (name in names(dataframes_ts)) {
                )) {
         df <- add_irr_surface_column(
                 df = df,
-                irr_df = ppr318_par
+                irr_df = par_list[["ppr318_par"]]
               )
       }
 
