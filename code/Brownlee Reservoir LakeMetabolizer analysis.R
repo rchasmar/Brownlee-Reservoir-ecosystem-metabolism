@@ -792,6 +792,12 @@ par_list <- mapply(
 # Restore original names
 names(par_list) <- c("ppr286_par", "ppr300_par", "ppr318_par")
 
+# Update the global environment with the modified dataframes
+list2env(
+  x = par_list,
+  envir = .GlobalEnv
+)
+
 # Process each dataframe
 results_list <- mapply(
                   FUN = process_dataframe,
@@ -938,7 +944,7 @@ for (name in names(dataframes_ts)) {
       )) {
     df <- add_irr_surface_column(
             df = df,
-            irr_df = par_list[["ppr286_par"]]
+            irr_df = ppr286_par
           )
   } else if (grepl(
                pattern = "^ppr300_",
@@ -946,7 +952,7 @@ for (name in names(dataframes_ts)) {
              )) {
       df <- add_irr_surface_column(
               df = df,
-              irr_df = par_list[["ppr300_par"]]
+              irr_df = ppr300_par
             )
     } else if (grepl(
                  pattern = "^ppr318_",
@@ -954,7 +960,7 @@ for (name in names(dataframes_ts)) {
                )) {
         df <- add_irr_surface_column(
                 df = df,
-                irr_df = par_list[["ppr318_par"]]
+                irr_df = ppr318_par
               )
       }
 
