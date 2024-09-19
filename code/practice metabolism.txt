@@ -1,9 +1,3 @@
-library(zoo)
-
-# Assuming 'ppr286_01' is your dataframe and 'datetime' is the time column
-ppr286_01_interpolated <- ppr286_01
-ppr286_01_interpolated[-1] <- lapply(ppr286_01[-1], function(x) na.approx(x, xout = ppr286_01$datetime, na.rm = FALSE))
-
 # Create a new dataframe with NA values replaced by 1
 ppr286_01_no_na <- ppr286_01_complete
 ppr286_01_no_na[is.na(ppr286_01_no_na)] <- 1
@@ -19,29 +13,45 @@ metab(
   k.gas.name = "k.gas"
 )
 
+x <- ppr286_01
+x$datetime <- as.POSIXct(x$datetime, tz = "UTC")
+x$date <- as.Date(x$datetime)
 
 # Step 1: Identify dates with exactly 144 complete rows
-complete_dates <- ppr286_01 %>%
+complete_dates <- x %>%
     filter(complete.cases(.)) %>%
-    group_by(Date) %>%
+    group_by(date) %>%
     summarise(count = n()) %>%
     filter(count == 144) %>%
-    pull(Date)
+    pull(date)
 
-filtered_df <- ppr286_01 %>%
-    filter(Date %in% complete_dates)
+filtered_df <- x %>%
+    filter(date %in% complete_dates)
 
 # Step 2: Choose one specific date with complete data
-specific_date <- complete_dates[c(1, 2, 3, 4, 5)]  # You can change the index to select a different date
+specific_dates <- complete_dates[1:91]  # You can change the index to select a different date
 
 # Step 3: Subset the original dataframe for this specific date
-one_day_df <- ppr286_01 %>%
-    filter(Date == specific_date)
+some_days_df <- x %>% filter(date %in% specific_dates)
 
-metab(
-  data = filtered_df,
+mle.res <- metabb(
+  data = ppr286_40,
   method = "mle",
 )
+mle.res$datetime = ISOdate(mle.res$year, 1, 1) + mle.res$doy*3600*24 - 3600*24
+plot(cumsum(NEP) ~ datetime, data = mle.res)
+
+plot(R ~ datetime, data = mle.res)
 
 
+for (i in 80:120) {
+    specific_dates_subset <- complete_dates[20:i]
+    some_days_df_subset <- x %>% filter(date %in% specific_dates_subset)
+    tryCatch({
+        result <- metab(data = some_days_df_subset, method = "mle")
+        print(paste("Success with", i, "days"))
+    }, error = function(e) {
+        print(paste("Error with", i, "days:", e$message))
+    })
+}
 

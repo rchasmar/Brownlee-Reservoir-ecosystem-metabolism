@@ -1,0 +1,29 @@
+specific_dates <- complete_dates[1:91]  # You can change the index to select a different date
+some_days_df <- x %>% filter(date %in% specific_dates)
+
+undebug(metab)
+debug(metab)
+metab(data = some_days_df, method = "mle")
+
+c
+results <- results
+uids <- unique(ids)
+data1 <- data1
+data2 <- data2
+assign("results", results, envir = .GlobalEnv)
+assign("ids", ids, envir = .GlobalEnv)
+assign("uids", uids, envir = .GlobalEnv)
+assign("data1", data1, envir = .GlobalEnv)
+assign("data2", data2, envir = .GlobalEnv)
+Q
+s1 <- length(results)
+s1
+s2 <- length(results[[1]])
+s2
+u1 <- unlist(results, recursive = FALSE)
+length(u1)
+s1 * s2
+head(uids)
+head(data1)
+head(data2)
+
