@@ -985,6 +985,9 @@ for (name in names(dataframes_ts)) {
           depth = depth
         )
 
+  # Set values less than 1 to zero in the 'irr' column
+  df$irr[df$irr < 1] <- 0
+  
   # Update the dataframe in the list
   dataframes_ts[[name]] <- df
 }

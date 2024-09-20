@@ -1,72 +1,179 @@
-metabb <- function (data, method = NULL, wtr.name = "wtr", irr.name = "irr", 
-    do.obs.name = "do.obs", ...) 
-{
-    m.args <- list(...)
-    if (wtr.name != "wtr") {
-        if (!"wtr" %in% names(data)) {
-            names(data)[names(data) == wtr.name] <- "wtr"
-        }
-        else {
-            data[, "wtr"] <- data[, wtr.name]
-        }
-    }
-    if (irr.name != "irr") {
-        if (!"irr" %in% names(data)) {
-            names(data)[names(data) == irr.name] <- "irr"
-        }
-        else {
-            data[, "irr"] <- data[, irr.name]
-        }
-    }
-    if (do.obs.name != "do.obs") {
-        if (!"do.obs" %in% names(data)) {
-            names(data)[names(data) == do.obs.name] <- "do.obs"
-        }
-        else {
-            data[, "do.obs"] <- data[, do.obs.name]
-        }
-    }
-    possibleMethods <- c("bookkeep", "bayesian", "kalman", "ols", 
-        "mle")
-    mtd <- match.arg(method, possibleMethods)
-    mtdCall <- paste("metab", mtd, sep = ".")
-    data1 <- addNAs(data[complete.cases(data), ], percentReqd = 1)
-    data2 <- data1[complete.cases(data1), ]
-    ids <- id(list(data2[, "year"], trunc(data2[, "doy"])))
-    ids <- as.integer(ids - (min(ids) - 1))
-    nid <- length(unique(ids))
-    results <- vector("list", nid)
-names(results) <- unique(ids)
+metabb <- function(
+            data,
+            method = NULL,
+            wtr.name = "wtr",
+            irr.name = "irr", 
+            do.obs.name = "do.obs",
+            ...
+          ) {
+              
+            # Capture additional arguments
+            m.args <- list(...)
+              
+            # Rename columns if necessary
+            if (wtr.name != "wtr") {
+              if (!"wtr" %in% names(data)) {
+                names(data)[names(data) == wtr.name] <- "wtr"
+              } else {
+                  data[, "wtr"] <- data[, wtr.name]
+                }
+            }
+            if (irr.name != "irr") {
+              if (!"irr" %in% names(data)) {
+                names(data)[names(data) == irr.name] <- "irr"
+              } else {
+                  data[, "irr"] <- data[, irr.name]
+                }
+            }   
+            if (do.obs.name != "do.obs") {
+              if (!"do.obs" %in% names(data)) {
+                names(data)[names(data) == do.obs.name] <- "do.obs"
+              } else {
+                  data[, "do.obs"] <- data[, do.obs.name]
+                }
+            }
+              
+            # Define possible methods and match the provided method
+            possibleMethods <- c("bookkeep",
+                                 "bayesian",
+                                 "kalman",
+                                 "ols",
+                                 "mle")
+            mtd <- match.arg(
+                     arg = method,
+                     choices = possibleMethods
+                   )
+            mtdCall <- paste(
+                         "metab",
+                         mtd,
+                         sep = "."
+                       )
+              
+            # Prepare data by removing rows with NAs
+            data1 <- addNAs(
+                       x = data[complete.cases(data), ],
+                       percentReqd = 1
+                     )
+            data2 <- data1[complete.cases(data1), ]
+              
+            # Generate unique IDs based on year and day of year (doy)
+            ids <- id(
+                     list(
+                       data2[ , "year"],
+                       trunc(
+                         x = data2[ , "doy"]
+                       )
+                     )
+                   )
+            ids <- as.integer(
+                     x = ids - (min(ids) - 1)
+                   )
+            nid <- length(
+                     x = unique(
+                           x = ids
+                         )
+                   )
+              
+            # Initialize results list
+            results <- vector(
+                         mode = "list",
+                         length = nid
+                       )
+            names(
+              x = results
+            ) <- unique(
+                   x = ids
+                 )
+              
+            # Loop through unique IDs and apply the selected method
+            for (i in unique(
+                        x = ids
+                      )) {
+              poss.args <- c("do.obs",
+                             "do.sat",
+                             "k.gas",
+                             "z.mix",
+                             "irr",
+                             "wtr",
+                             "datetime")
+              used.args <- poss.args[poss.args %in% names(
+                                                      x = data2
+                                                    )]
+              largs0 <- as.list(
+                          x = data2[i == ids, used.args]
+                        )
+              largs <- c(largs0,
+                         m.args[!names(
+                                   x = m.args
+                                 ) %in% names(
+                                          x = largs0
+                                        )])
+              results[[as.character(
+                         x = i
+                       )]] <- do.call(
+                                what = mtdCall,
+                                args = largs
+                              )
+            }
+              
+              # Combine results into a single data frame
+              answer0 <- conquerList(
+                           x = results,
+                           naming = data.frame(
+                                      year = data2[!duplicated(
+                                                      x = ids
+                                                    ), "year"],
+                                      doy = trunc(
+                                              x = data2[!duplicated(
+                                                           x = ids
+                                                         ), "doy"]
+                                            )
+                                    )
+                         )
+              a0.names <- names(
+                            x = results[[1]]
+                          )
+              
+              # Process the combined results
+              if (length(
+                    x = a0.names
+                  ) > 1 & is.list(
+                            x = answer0
+                          ) & !is.data.frame(
+                                 x = answer0
+                               )) {
+                names(
+                  x = answer0
+                ) <- a0.names
+                answer <- answer0$metab
 
-for (i in unique(ids)) {
-    poss.args <- c("do.obs", "do.sat", "k.gas", "z.mix", 
-        "irr", "wtr", "datetime")
-    used.args <- poss.args[poss.args %in% names(data2)]
-    largs0 <- as.list(data2[i == ids, used.args])
-    largs <- c(largs0, m.args[!names(m.args) %in% names(largs0)])
-    results[[as.character(i)]] <- do.call(mtdCall, largs)
-}
-    answer0 <- conquerList(results, naming = data.frame(year = data2[!duplicated(ids), 
-        "year"], doy = trunc(data2[!duplicated(ids), "doy"])))
-    a0.names <- names(results[[1]])
-    if (length(a0.names) > 1 & is.list(answer0) & !is.data.frame(answer0)) {
-        names(answer0) <- a0.names
-        answer <- answer0$metab
-        for (i in 1:length(a0.names)) {
-            if (a0.names[i] == "metab") {
-                next
-            }
-            if (a0.names[i] == "smoothDO") {
-                t.sDO <- answer0[[a0.names[i]]]
-                t.sDO <- t.sDO[, !names(t.sDO) %in% c("doy", 
-                  "year")]
-                attr(answer, "smoothDO.vec") <- c(t(t.sDO))
-            }
-            attr(answer, a0.names[i]) <- answer0[[a0.names[i]]]
-        }
-    }
-    else {
-        answer <- answer0
-    }
-    return(answer)
-}
+                for (i in 1:length(
+                              x = a0.names
+                            )) {
+                  if (a0.names[i] == "metab") {
+                    next
+                  }
+                  if (a0.names[i] == "smoothDO") {
+                    t.sDO <- answer0[[a0.names[i]]]
+                    t.sDO <- t.sDO[ , !names(
+                                         x = t.sDO
+                                       ) %in% c("doy",
+                                                "year")]
+                    attr(
+                      x = answer,
+                      which = "smoothDO.vec"
+                    ) <- c(t(
+                             x = t.sDO
+                           ))
+                  }
+                  attr(
+                    x = answer,
+                    which = a0.names[i]
+                  ) <- answer0[[a0.names[i]]]
+                }
+              } else {
+                answer <- answer0
+                }
+              
+              return(answer)
+          }

@@ -34,24 +34,71 @@ specific_dates <- complete_dates[1:91]  # You can change the index to select a d
 # Step 3: Subset the original dataframe for this specific date
 some_days_df <- x %>% filter(date %in% specific_dates)
 
+
+
+
 mle.res <- metabb(
-  data = ppr286_40,
+  data = ppr286_01,
   method = "mle",
 )
-mle.res$datetime = ISOdate(mle.res$year, 1, 1) + mle.res$doy*3600*24 - 3600*24
-plot(cumsum(NEP) ~ datetime, data = mle.res)
+# Set negative GPP values to NA
+mle.res$GPP[mle.res$GPP < 0] <- NA
+# Set positive R values to NA
+mle.res$R[mle.res$R > 0] <- NA
 
-plot(R ~ datetime, data = mle.res)
+# Create a Date object based on year and day of year (doy)
+mle.res$date <- as.Date(
+                  x = mle.res$doy - 1,
+                  origin = paste0(
+                             mle.res$year,
+                             "-01-01"
+                           )
+                )
+Date <- seq(as.Date("2017-01-01"), as.Date("2024-01-01"), by = "year")
 
+par(
+  mfrow = c(1, 2)
+)
+plot(
+  GPP ~ date,
+  data = mle.res,
+  type = 'h',
+  lwd = 2,
+  col = "darkgreen",
+  xlim = range(Date),
+  ylim = c(-15, 15),
+  xlab = "",
+  ylab = "Metabolism",
+  xaxt = 'n'
+)
+lines(R ~ date,
+  data = mle.res,
+  type = 'h',
+  lwd = 2,
+  col = "firebrick3"
+)
+abline(
+  h = 0
+)
+axis.Date(1, at = Date, format = "%Y")
+abline(v = Date, lty = 'dashed')
 
-for (i in 80:120) {
-    specific_dates_subset <- complete_dates[20:i]
-    some_days_df_subset <- x %>% filter(date %in% specific_dates_subset)
-    tryCatch({
-        result <- metab(data = some_days_df_subset, method = "mle")
-        print(paste("Success with", i, "days"))
-    }, error = function(e) {
-        print(paste("Error with", i, "days:", e$message))
-    })
-}
+plot(
+  cumsum(
+    x = NEP
+  ) ~ date,
+  data = mle.res,
+  pch = 19,
+  xlim = range(Date),
+  ylim = c(-100, 100),
+  xlab = "",
+  ylab = "Cumulative NEP",
+  xaxt = 'n'
+)
+abline(
+  h = 0,
+  lty = 'dashed'
+)
+axis.Date(1, at = Date, format = "%Y")
+abline(v = Date, lty = 'dashed')
 
