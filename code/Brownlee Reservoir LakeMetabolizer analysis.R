@@ -46,22 +46,41 @@ file_paths <- file.path(
               )
 
 # Define the river miles corresponding to the first three RData files
-river_miles <- c("286", "300", "318")
+river_miles <- c(
+                 "286",
+                 "300",
+                 "318"
+               )
 
 # Define the depths for which data is available
-depths <- c("01", "03", "06", "10", "15", "21", "30", "40")
+depths <- c(
+            "01",
+            "03",
+            "06",
+            "10",
+            "15",
+            "21",
+            "30",
+            "40"
+          )
 
 # Define variables for weather data
-weather_vars <- c("WindSpeed", "SolRad", "PARLumin")
+weather_vars <- c(
+                  "WindSpeed",
+                  "SolRad",
+                  "PARLumin"
+                )
 
 # Read the profiles data from the CSV file
 profiles <- read.csv(
-              file = file_paths[4],
+                file = file_paths[4],
               header = TRUE
             )
 
 # Loop through each river mile and load the corresponding RData file
-for (i in seq_along(river_miles)) {
+for (i in seq_along(
+            along.with = river_miles
+          )) {
   # Load the RData file for the current river mile
   load(
     file = file_paths[i]
@@ -69,12 +88,12 @@ for (i in seq_along(river_miles)) {
   # Split the profiles data by river mile and assign to a variable
   # Split function divides profiles into subsets based on River.Mile column
   assign(
-    x = paste0(
-          "ppr",
-          river_miles[i],
-          "_",
-          "prf"
-        ), 
+        x = paste0(
+              "ppr",
+              river_miles[i],
+              "_",
+              "prf"
+            ), 
     value = split(
               x = profiles,
               f = profiles$River.Mile
@@ -85,20 +104,21 @@ for (i in seq_along(river_miles)) {
   for (depth in depths) {
     # Check if the data frame for the current depth exists in the environment
     if (exists(
-          paste0(
-            "PPR",
-            as.numeric(depth)
-          )
-        )
-    ) {
+          x = paste0(
+                "PPR",
+                as.numeric(
+                  x = depth
+                )
+              )
+        )) {
       # Assign dataframe to new variable with name based on river mile and depth
       assign(
-        x = paste0(
-              "ppr",
-              river_miles[i],
-              "_",
-              depth
-            ), 
+            x = paste0(
+                  "ppr",
+                  river_miles[i],
+                  "_",
+                  depth
+                ), 
         value = get(
                   x = paste0(
                         "PPR",
@@ -127,13 +147,13 @@ buoy_weather <- PPRWeather
 # Apply the function to each weather variable
 split_data <- setNames(
                 object = lapply(
-                           X = weather_vars,
+                             X = weather_vars,
                            FUN = function(var) split_by_var_and_rm(
                                                  var = var, 
-                                                 rm = river_miles
+                                                  rm = river_miles
                                                )
                          ), 
-                nm = weather_vars
+                    nm = weather_vars
               )
 
 # Access the results by name
@@ -155,24 +175,26 @@ dam_wind <- BrownleeDamWindV
 # Read the wind speed data from the CSV file, skipping the first 14 rows
 # Select only the relevant columns: Timestamp and Value
 ppr318_wnd_2021 <- read.csv(
-                     file = file_paths[6],
+                       file = file_paths[6],
                      header = TRUE,
-                     skip = 14
-                   )[c("Timestamp..UTC.07.00.", "Value")]
+                       skip = 14
+                   )[c(
+                       "Timestamp..UTC.07.00.",
+                       "Value"
+                     )]
 
 # Remove all dataframes with names starting with a capital letter
 rm(
-  list = ls()[
-           sapply(
-             X = mget(
-                   x = ls(), 
-                   envir = .GlobalEnv
-                 ), 
-             FUN = is.data.frame
-           ) & grepl(
-                 pattern = "^[A-Z]", 
-                 x = ls()
-               )]
+  list = ls()[sapply(
+                  X = mget(
+                            x = ls(), 
+                        envir = .GlobalEnv
+                      ), 
+                FUN = is.data.frame
+              ) & grepl(
+                    pattern = "^[A-Z]", 
+                          x = ls()
+                  )]
 )
 
 #===============================================================================
@@ -182,8 +204,11 @@ rm(
 
 # New datetime values to append
 new_dates <- as.POSIXct(
-               x = c("2017-01-01 00:00:00", "2023-12-31 23:50:00"),
-               tz = "America/Denver", 
+                    x = c(
+                          "2017-01-01 00:00:00",
+                          "2023-12-31 23:50:00"
+                        ),
+                   tz = "America/Denver", 
                format = "%Y-%m-%d %H:%M:%S"
              )
 
@@ -192,76 +217,89 @@ pattern_ts <- "^ppr[0-9]+_[0-9]+$"
 pattern_prf <- "^ppr[0-9]+_prf$"
 
 # Rename ppr318_wnd_2021 dataframe columns and format datetime
-colnames(ppr318_wnd_2021) <- c("DateTime", "Value")
-ppr318_wnd_2021$DateTime <- as.POSIXct(
-                              x = ppr318_wnd_2021$DateTime,
-                              tz = "America/Denver",
-                              format = "%Y-%m-%d %H:%M:%S"
-                            )
+colnames(
+  x = ppr318_wnd_2021
+) <- c(
+       "DateTime",
+       "Value"
+     )
+ppr318_wnd_2021[ , "DateTime"] <- as.POSIXct(
+                                         x = ppr318_wnd_2021[ , "DateTime"],
+                                        tz = "America/Denver",
+                                    format = "%Y-%m-%d %H:%M:%S"
+                                  )
 
 # Create lists of dataframes that match patterns
 dataframes_ts <- mget(
-                   x = ls(
-                         pattern = pattern_ts
-                       ),
+                       x = ls(
+                             pattern = pattern_ts
+                           ),
                    envir = .GlobalEnv
                  )
 dataframes_prf <- mget(
-                    x = ls(
-                          pattern = pattern_prf
-                        ),
+                        x = ls(
+                              pattern = pattern_prf
+                            ),
                     envir = .GlobalEnv
                   )
 dataframes_wthr <- list(
-                     ppr286_wnd = ppr286_wnd, 
-                     ppr300_wnd = ppr300_wnd, 
-                     ppr318_wnd = ppr318_wnd,
+                          ppr286_wnd = ppr286_wnd, 
+                          ppr300_wnd = ppr300_wnd, 
+                          ppr318_wnd = ppr318_wnd,
                      ppr318_wnd_2021 = ppr318_wnd_2021,
-                     ppr286_solrad = ppr286_solrad, 
-                     ppr300_solrad = ppr300_solrad, 
-                     ppr318_solrad = ppr318_solrad, 
-                     ppr286_par = ppr286_par, 
-                     ppr300_par = ppr300_par, 
-                     ppr318_par = ppr318_par
+                       ppr286_solrad = ppr286_solrad, 
+                       ppr300_solrad = ppr300_solrad, 
+                       ppr318_solrad = ppr318_solrad, 
+                          ppr286_par = ppr286_par, 
+                          ppr300_par = ppr300_par, 
+                          ppr318_par = ppr318_par
                    )
 
 # Loop through each dataframe in dataframes_ts
-for (name in names(dataframes_ts)) {
+for (name in names(
+               x = dataframes_ts
+             )) {
   
   df <- dataframes_ts[[name]]
   
   # 1. Select the specified columns
-  df <- df[ , c("DateTime",
+  df <- df[ , c(
+                "DateTime",
                 "DO",
-                "WTemp")]
+                "WTemp"
+              )]
   
   # 2. Rename the columns
-  colnames(df) <- c("datetime",
-                    "do.obs",
-                    "wtr")
+  colnames(
+    x = df
+  ) <- c(
+         "datetime",
+         "do.obs",
+         "wtr"
+       )
   
   # 3. Apply the pad function
   df <- pad(
-          x = df,
-          by = 'datetime',
-          interval = 'min',
+                    x = df,
+                   by = 'datetime',
+             interval = 'min',
           break_above = 5
         )
   
   # 4. Remove duplicated rows based on the datetime column
   df <- df[!duplicated(
-              x = df$datetime
+              x = df[ , "datetime"]
             ), ]
   
   # 5. Interpolate gaps
   df <- interpolate_gaps_spline(
-          data = df,
-          column = "do.obs",
+             data = df,
+           column = "do.obs",
           max_gap = 10
         )
   df <- interpolate_gaps_spline(
-          data = df,
-          column = "wtr",
+             data = df,
+           column = "wtr",
           max_gap = 10
         )
   
@@ -280,10 +318,14 @@ for (name in names(dataframes_ts)) {
                          )
                 )
               )
-  names(x = new_rows) <- names(x = df)
+  names(
+    x = new_rows
+  ) <- names(
+         x = df
+       )
 
   # 8. Assign the new datetime values to the DateTime column
-  new_rows$datetime <- new_dates
+  new_rows[ , "datetime"] <- new_dates
 
   # 9. Append new rows to the beginning and end of the dataframe
   df <- rbind(
@@ -294,126 +336,149 @@ for (name in names(dataframes_ts)) {
 
   # 10. Pad the dataframe to fill in missing datetime values
   df <- pad(
-          x = df,
-          by = 'datetime',
+                 x = df,
+                by = 'datetime',
           interval = '10 min'
         )
 
   # 11. Add a DOY column
-  df$doy <- as.numeric(
-              x = format(
-                    x = df$datetime, 
-                    format = "%j"
+  df[ , "doy"] <- as.numeric(
+                    x = format(
+                               x = df[ , "datetime"], 
+                          format = "%j"
+                        )
                   )
-            )
 
   # 12. Set row names
-  rownames(df) <- seq(
-                    from = 1,
-                    to = nrow(df),
-                    by = 1
-                  )
+  rownames(
+    x = df
+  ) <- seq(
+         from = 1,
+           to = nrow(df),
+           by = 1
+       )
 
   # Update the dataframe in the list
   dataframes_ts[[name]] <- df
 }
 
 # Loop through each dataframe in dataframes_prf
-for (name in names(dataframes_prf)) {
+for (name in names(
+               x = dataframes_prf
+             )) {
   df <- dataframes_prf[[name]]
   
   # 1. Select the specified columns
-  df <- df[, c("DateTime",
+  df <- df[, c(
+               "DateTime",
                "Date",
                "DO",
                "WTemp",
                "PAR",
                "SpecCond",
-               "Depth")]
+               "Depth"
+             )]
   
   # 2. Rename the columns
-  colnames(df) <- c("datetime",
-                    "date",
-                    "do.obs",
-                    "wtr",
-                    "irr",
-                    "cond",
-                    "depth")
+  colnames(
+    x = df
+  ) <- c(
+         "datetime",
+         "date",
+         "do.obs",
+         "wtr",
+         "irr",
+         "cond",
+         "depth"
+       )
   
   # 3. Set row names
-  rownames(df) <- seq(
-                    from = 1,
-                    to = nrow(df),
-                    by = 1
-                  )
+  rownames(
+    x = df
+  ) <- seq(
+         from = 1,
+           to = nrow(
+                  x = df
+                ),
+           by = 1
+       )
   
   # 4. Format datetime
-  df$datetime <- as.POSIXct(
-                   x = df$datetime, 
-                   format = "%m/%d/%Y %H:%M"
-                 )
+  df[ , "datetime"] <- as.POSIXct(
+                              x = df[ , "datetime"], 
+                         format = "%m/%d/%Y %H:%M"
+                       )
   
   # 5. Convert the 'date' column to Date objects
-  df$date <- as.Date(
-               x = df$date,
-               format = "%m/%d/%Y"
-             )
+  df[ , "date"] <- as.Date(
+                          x = df[ , "date"],
+                     format = "%m/%d/%Y"
+                   )
 
   # 6. Convert conductivity from mS/cm to µS/m
-  df$cond <- df$cond * 1000
+  df[ , "cond"] <- df[ , "cond"] * 1000
 
   # 7. Calculate salinity (PSU) based on conductivity
-  df$salinity <- 6e-04 * df$cond
+  df[ , "salinity"] <- 6e-04 * df[ , "cond"]
 
   # 8. Calculate water density using water.density function
-  df$wtr_density <- water.density(
-                      wtr = df$wtr,
-                      sal = df$salinity
-                    )
+  df[ , "wtr_density"] <- water.density(
+                            wtr = df[ , "wtr"],
+                            sal = df[ , "salinity"]
+                          )
 
   # Update the dataframe in the list
   dataframes_prf[[name]] <- df
 }
 
 # Loop through each dataframe in dataframes_wthr
-for (name in names(dataframes_wthr)) {
+for (name in names(
+               x = dataframes_wthr
+             )) {
   df <- dataframes_wthr[[name]]
 
   # 1. Select the specified columns
-  df <- df[, c("DateTime",
-               "Value")]
+  df <- df[, c(
+               "DateTime",
+               "Value"
+             )]
 
   # 2. Rename the columns
-  colnames(df) <- c("datetime",
-                    "value")
+  colnames(
+    x = df
+  ) <- c(
+         "datetime",
+         "value"
+       )
 
   # 3. Round datetime to the nearest minute
   df <- mutate(
-          .data = df, 
+             .data = df, 
           datetime = round_date(
-                       x = datetime,
+                          x = datetime,
                        unit = "minute"
                      )
         )
 
   # 4. Pad the dataframe to fill in missing datetime values
   df <- pad(
-          x = df,
-          by = 'datetime',
-          interval = 'min',
+                    x = df,
+                   by = 'datetime',
+             interval = 'min',
           break_above = 5
         )
   
   # 5. Remove duplicate datetime entries
   df <- df[!duplicated(
-              x = df$datetime
+              x = df[ , "datetime"]
             ), ]
 
   # 6. Interpolate gaps in data using linear interpolation
   df <- interpolate_gaps_linear(
-          data = df,
-          column = "value",
-          max_gap = 10)
+             data = df,
+           column = "value",
+          max_gap = 10
+        )
   
   # 7. Subset the dataframe to include only the necessary minutes
   df <- subset_minutes(
@@ -432,10 +497,14 @@ for (name in names(dataframes_wthr)) {
                            )
                   )
                 )
-    names(x = new_rows) <- names(x = df)
+    names(
+      x = new_rows
+    ) <- names(
+           x = df
+         )
 
     # 9. Assign the new datetime values to the DateTime column
-    new_rows$datetime <- new_dates
+    new_rows[ , "datetime"] <- new_dates
 
     # 10. Append new rows to the beginning and end of the dataframe
     df <- rbind(
@@ -446,19 +515,22 @@ for (name in names(dataframes_wthr)) {
 
     # 11. Pad the dataframe to fill in missing datetime values
     df <- pad(
-            x = df,
-            by = 'datetime',
+                   x = df,
+                  by = 'datetime',
             interval = '10 min'
           )
   }
 
   # 12. Set row names
-  rownames(df) <- seq(
-                    from = 1,
-                    to = nrow(
-                           x = df
-                         ),
-                    by = 1)
+  rownames(
+    x = df
+  ) <- seq(
+         from = 1,
+           to = nrow(
+                  x = df
+                ),
+           by = 1
+       )
 
   # Update the dataframe in the list
   dataframes_wthr[[name]] <- df
@@ -474,7 +546,7 @@ dataframes_list <- list(
 # Loop through the list and use list2env
 for (df in dataframes_list) {
   list2env(
-    x = df,
+        x = df,
     envir = .GlobalEnv
   )
 }
@@ -484,8 +556,7 @@ matching_indices <- which(
                       ppr318_wnd$datetime %in%
                       ppr318_wnd_2021$datetime
                     )
-ppr318_wnd[matching_indices,
-           "value"] <- ppr318_wnd_2021$value
+ppr318_wnd[matching_indices, "value"] <- ppr318_wnd_2021[ , "value"]
 dataframes_wthr[["ppr318_wnd"]] <- ppr318_wnd
 
 #===============================================================================
@@ -493,27 +564,31 @@ dataframes_wthr[["ppr318_wnd"]] <- ppr318_wnd
 #===============================================================================
 
 # Loop through each dataframe in dataframes_ts
-for (name in names(dataframes_ts)) {
+for (name in names(
+               x = dataframes_ts
+             )) {
   df <- dataframes_ts[[name]]
   
   # Compute do.sat
-  df$do.sat <- compute_oxygen_saturation(
-                 x = df$wtr + 273.15
-               )
+  df[ , "do.sat"] <- compute_oxygen_saturation(
+                       x = df[ , "wtr"] + 273.15
+                     )
   
   # Compute do.percent
-  df$do.percent <- df$'do.obs' / df$'do.sat' * 100
+  df[ , "do.percent"] <- df[ , "do.obs"] / df[ , "do.sat"] * 100
   
   # Set do.obs and do.sat to NA where do.percent > 300
   idx <- which(
-           df$do.percent > 200
+           df[ , "do.percent"] > 200
          )
-  df[idx, c("do.obs",
-            "do.percent")] <- NA  
+  df[idx, c(
+            "do.obs",
+            "do.percent"
+          )] <- NA  
 
   # Apply the remove_do_anomalies function
   df <- remove_do_anomalies(
-          df = df,
+                 df = df,
           threshold = 2
         )
   
@@ -523,7 +598,7 @@ for (name in names(dataframes_ts)) {
 
 # Reassign the modified dataframe back to the global environment
 list2env(
-  x = dataframes_ts,
+      x = dataframes_ts,
   envir = .GlobalEnv
 )
 
@@ -536,34 +611,34 @@ datetime <- dataframes_ts[[1]]$datetime
 
 # Apply the function to each prefix with the specified date ranges
 ppr318_meta <- process_data(
-                 prefix = "ppr318",
+                        prefix = "ppr318",
                  dataframes_ts = dataframes_ts,
-                 datetime = datetime,
-                 start_date = NULL,
-                 end_date = NULL,
-                 slope = 0.2,
-                 spar = 0.3,
-                 subset_data = FALSE
+                      datetime = datetime,
+                    start_date = NULL,
+                      end_date = NULL,
+                         slope = 0.2,
+                          spar = 0.3,
+                   subset_data = FALSE
                )
 ppr300_meta <- process_data(
-                 prefix = "ppr300",
+                        prefix = "ppr300",
                  dataframes_ts = dataframes_ts,
-                 datetime = datetime,
-                 start_date = "2020-01-01",
-                 end_date = "2022-12-31",
-                 slope = 0.2,
-                 spar = 0.3,
-                 subset_data = FALSE
+                      datetime = datetime,
+                    start_date = "2020-01-01",
+                      end_date = "2022-12-31",
+                         slope = 0.2,
+                          spar = 0.3,
+                   subset_data = TRUE
                )
 ppr286_meta <- process_data(
-                 prefix = "ppr286",
+                        prefix = "ppr286",
                  dataframes_ts = dataframes_ts,
-                 datetime = datetime,
-                 start_date = "2019-01-01",
-                 end_date = "2023-12-31",
-                 slope = 0.2,
-                 spar = 0.3,
-                 subset_data = FALSE
+                      datetime = datetime,
+                    start_date = "2019-01-01",
+                      end_date = "2023-12-31",
+                         slope = 0.2,
+                          spar = 0.3,
+                   subset_data = TRUE
                )
 
 # Set up the plotting area for 1x3 layout
@@ -573,29 +648,29 @@ par(
 
 # Create plots for each dataframe
 create_plot(
-  df = ppr286_meta,
+     df = ppr286_meta,
   title = "PPR286 Meta Data with Fitted and Predicted Values"
 )
 create_plot(
-  df = ppr300_meta,
+     df = ppr300_meta,
   title = "PPR300 Meta Data with Fitted and Predicted Values"
 )
 create_plot(
-  df = ppr318_meta,
+     df = ppr318_meta,
   title = "PPR318 Meta Data with Fitted and Predicted Values"
 )
 
 # Define the date sequence for plotting
 date <- seq(
           from = as.POSIXct(
-                   x = "2017-01-01",
+                    x = "2017-01-01",
                    tz = "America/Denver"
                  ),
-          to = as.POSIXct(
-                 x = "2024-01-01",
-                 tz = "America/Denver"
-               ),
-          by = "year"
+            to = as.POSIXct(
+                    x = "2024-01-01",
+                   tz = "America/Denver"
+                 ),
+            by = "year"
         )
 
 meta_dfs <- list(
@@ -606,9 +681,13 @@ meta_dfs <- list(
 
 # Plot the results for each dataset
 par(
-  mfrow = c(3, 1)
+  mfrow = c(
+            3, 1
+          )
 )
-for (i in 1:length(meta_dfs)) {
+for (i in 1:length(
+              x = meta_dfs
+            )) {
   plot(
     meta ~ datetime,
     data = meta_dfs[[i]],
@@ -619,12 +698,12 @@ for (i in 1:length(meta_dfs)) {
     main = names(meta_dfs)[i]
   )
   axis.POSIXct(
-    side = 1,     
-    at = date,
+      side = 1,     
+        at = date,
     format = "%Y"
   )
   abline(
-    v = date,
+      v = date,
     lty = 'dashed'
   )
 }
@@ -634,49 +713,55 @@ par(
 )
 
 # Names for the fit models
-fit_names <- c("fit_318", "fit_300", "fit_286")
+fit_names <- c(
+               "fit_318",
+               "fit_300",
+               "fit_286"
+             )
 
 # Fit models for each meta dataframe using lapply and assign names
 fit_models <- setNames(
                 object = lapply(
-                           X = meta_dfs,
+                             X = meta_dfs,
                            FUN = fit_model
                          ),
-                nm = fit_names
+                    nm = fit_names
               )
 
 # Assigning fit models to the global environment
 list2env(
-  x = fit_models,
+      x = fit_models,
   envir = .GlobalEnv
 )
 
 # Loop through each dataframe in dataframes_ts
-for (name in names(dataframes_ts)) {
+for (name in names(
+               x = dataframes_ts
+             )) {
   df <- dataframes_ts[[name]]
 
   if (grepl(
         pattern = "^ppr286", 
-        x = name
+              x = name
       )) {
     df <- add_predictions(
-            df = df,
+               df = df,
             model = fit_286
           )
   } else if (grepl(
                pattern = "^ppr300",
-               x = name
+                     x = name
              )) {
       df <- add_predictions(
-              df = df,
+                 df = df,
               model = fit_300
             )
     } else if (grepl(
                  pattern = "^ppr318",
-                 x = name
+                       x = name
                )) {
         df <- add_predictions(
-                df = df,
+                   df = df,
                 model = fit_318
               )
       }
@@ -686,7 +771,7 @@ for (name in names(dataframes_ts)) {
 }
 
 list2env(
-  x = dataframes_ts,
+      x = dataframes_ts,
   envir = .GlobalEnv
 )
 
@@ -695,32 +780,34 @@ list2env(
 #===============================================================================
 
 # Iterate over the list and update the time series dataframes
-for (name in names(dataframes_ts)) {
+for (name in names(
+               x = dataframes_ts
+             )) {
   df <- dataframes_ts[[name]]  # Extract the dataframe by name
   
   # Add 'wnd' column based on the dataframe name pattern
   if (grepl(
         pattern = "^ppr286_",
-        x = name
+              x = name
       )) {
     df <- add_wnd_column(
-            df = df,
+                df = df,
             wnd_df = ppr286_wnd
           )
   } else if (grepl(
                pattern = "^ppr300_",
-               x = name
+                     x = name
              )) {
       df <- add_wnd_column(
-              df = df,
+                  df = df,
               wnd_df = ppr300_wnd
             )
     } else if (grepl(
                  pattern = "^ppr318_",
-                 x = name
+                       x = name
                )) {
         df <- add_wnd_column(
-                df = df,
+                    df = df,
                 wnd_df = ppr318_wnd
               )
       }
@@ -733,19 +820,19 @@ for (name in names(dataframes_ts)) {
   # Extract the numeric value after the underscore in the dataframe name
   value_after_underscore <- as.numeric(
                               x = sub(
-                                    pattern = ".*_(\\d+)$",
+                                        pattern = ".*_(\\d+)$",
                                     replacement = "\\1",
-                                    x = name
+                                              x = name
                                   )
                             )
   
   # Find rows where extracted value is greater than value in z.mix column
   rows_to_update <- which(
-                      value_after_underscore > df$z.mix
+                      value_after_underscore > df[ , "z.mix"]
                     )
   
   # Set k.gas to 0 for those rows
-  df$k.gas[rows_to_update] <- 0
+  df[ , "k.gas"][rows_to_update] <- 0
   
   # Update the dataframe in the list
   dataframes_ts[[name]] <- df
@@ -753,7 +840,7 @@ for (name in names(dataframes_ts)) {
 
 # Update the global environment with the modified dataframes
 list2env(
-  x = dataframes_ts,
+      x = dataframes_ts,
   envir = .GlobalEnv
 )
 
@@ -777,42 +864,52 @@ prf_list <- list(
               ppr300_prf,
               ppr318_prf
             )
-names_list <- c("ppr286",
+names_list <- c(
+                "ppr286",
                 "ppr300",
-                "ppr318")
+                "ppr318"
+              )
 
 # Apply fill_na_with_solrad function to each pair of solrad and par dataframes
 par_list <- mapply(
-              FUN = fill_na_with_solrad,
+                    FUN = fill_na_with_solrad,
               solrad_df = solrad_list,
-              par_df = par_list,
-              SIMPLIFY = FALSE
+                 par_df = par_list,
+               SIMPLIFY = FALSE
             )
 
 # Restore original names
-names(par_list) <- c("ppr286_par", "ppr300_par", "ppr318_par")
+names(
+  x = par_list
+) <- c(
+       "ppr286_par",
+       "ppr300_par",
+       "ppr318_par"
+     )
 
 # Update the global environment with the modified dataframes
 list2env(
-  x = par_list,
+      x = par_list,
   envir = .GlobalEnv
 )
 
 # Process each dataframe
 results_list <- mapply(
-                  FUN = process_dataframe,
-                  prf_df = prf_list,
-                  par_df = par_list,
+                       FUN = process_dataframe,
+                    prf_df = prf_list,
+                    par_df = par_list,
                   SIMPLIFY = FALSE
                 )
 
 # Combine all results into one dataframe with source column
 combined_results <- bind_rows(
                       lapply(
-                        X = seq_along(results_list),
+                          X = seq_along(
+                                along.with = results_list
+                              ),
                         FUN = function(i) {
                                 mutate(
-                                  .data = results_list[[i]],
+                                   .data = results_list[[i]],
                                   source = names_list[i]
                                 )
                               }
@@ -820,28 +917,30 @@ combined_results <- bind_rows(
                     )
 
 # Define the first day of each month
-first_of_month <- c(1, 32, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335)
+first_of_month <- c(
+                    1, 32, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335
+                  )
 
 # Plot all data on one plot
 plot(
-  Kd ~ day_of_year,
+    Kd ~ day_of_year,
   data = combined_results,
   xlab = "Month", 
   ylab = expression(
-           x = "Light Extinction Coefficient (m"^-1*")"
+           "Light Extinction Coefficient (m"^-1*")"
          ), 
   main = "Kd vs Day of Year",
-  pch = 19,
+   pch = 19,
   xlim = c(1, 366),
   ylim = c(0, 1.5), 
   xaxt = "n",
-  col = as.factor(
-          x = combined_results$source
-        )
+   col = as.factor(
+           x = combined_results[ , "source"]
+         )
 )
 axis(
-  side = 1,
-  at = first_of_month,
+    side = 1,
+      at = first_of_month,
   labels = day_of_year_to_month(
              day_of_year = first_of_month
            )
@@ -850,40 +949,40 @@ axis(
 # Fit a single Gaussian curve for all data
 gaussian_fit <- nls(
                   formula = Kd ~ a * exp(-((day_of_year - b)^2) / (2 * c^2)), 
-                  data = combined_results, 
-                  start = list(
-                            a = 1, 
-                            b = mean(
-                                  x = combined_results$day_of_year, 
-                                  na.rm = TRUE
-                                ), 
-                            c = sd(
-                                  x = combined_results$day_of_year, 
-                                  na.rm = TRUE
-                                )
-                          ), 
+                     data = combined_results, 
+                    start = list(
+                              a = 1, 
+                              b = mean(
+                                        x = combined_results[ , "day_of_year"], 
+                                    na.rm = TRUE
+                                  ), 
+                              c = sd(
+                                        x = combined_results[ , "day_of_year"], 
+                                    na.rm = TRUE
+                                  )
+                            ), 
                   control = nls.control(
                               minFactor = 1e-10,
-                              maxiter = 1000
+                                maxiter = 1000
                             )
                 )
 
 # Generate a sequence of day_of_year values for prediction
 day_of_year_seq <- seq(
-                     from = min(
-                              x = combined_results$day_of_year,
-                              na.rm = TRUE
-                            ), 
-                     to = max(
-                            x = combined_results$day_of_year,
-                            na.rm = TRUE
-                          ), 
+                           from = min(
+                                        x = combined_results[ , "day_of_year"],
+                                    na.rm = TRUE
+                                  ), 
+                             to = max(
+                                        x = combined_results[ , "day_of_year"],
+                                    na.rm = TRUE
+                                  ), 
                      length.out = 100
                    )
 
 # Predict Kd values using the Gaussian fit model
 fitted_values <- predict(
-                   object = gaussian_fit, 
+                    object = gaussian_fit, 
                    newdata = data.frame(
                                day_of_year = day_of_year_seq
                              )
@@ -891,102 +990,104 @@ fitted_values <- predict(
 
 # Add the fitted Gaussian curve to the plot
 lines(
-  x = day_of_year_seq,
-  y = fitted_values,
+    x = day_of_year_seq,
+    y = fitted_values,
   col = "black",
   lwd = 2
 )
 
 # Add legend with matching colors
 legend(
-  x = "topright", 
+       x = "topright", 
   legend = unique(
              x = combined_results$source
            ), 
-  col = unique(
-          x = as.factor(
-                x = combined_results$source
-              )
-        ), 
-  pch = 19
+     col = unique(
+             x = as.factor(
+                   x = combined_results[ , "source"]
+                 )
+           ), 
+     pch = 19
 )
 
 # Calculate R-squared for the Gaussian fit
 gaussian_r_squared <- calculate_gaussian_r_squared(
                         model = gaussian_fit, 
-                        data = combined_results
+                         data = combined_results
                       )
 
 # Add R-squared and p-value to the plot
 text(
-  x = 10,
-  y = 1.4, 
+       x = 10,
+       y = 1.4, 
   labels = paste(
              "R-squared:",
              round(
-               x = gaussian_r_squared,
+                    x = gaussian_r_squared,
                digits = 3
              ),
              "\nP-value: < 0.005",
              sep = " "
            ), 
-  pos = 4
+     pos = 4
 )
 
 # Iterate over the list and update the time series dataframes
-for (name in names(dataframes_ts)) {
+for (name in names(
+               x = dataframes_ts
+             )) {
   df <- dataframes_ts[[name]]  # Extract the dataframe by name
 
   # Add 'irr_surface' column based on the dataframe name pattern
   if (grepl(
         pattern = "^ppr286_",
-        x = name
+              x = name
       )) {
     df <- add_irr_surface_column(
-            df = df,
+                df = df,
             irr_df = ppr286_par
           )
   } else if (grepl(
                pattern = "^ppr300_",
-               x = name
+                     x = name
              )) {
       df <- add_irr_surface_column(
-              df = df,
+                  df = df,
               irr_df = ppr300_par
             )
     } else if (grepl(
                  pattern = "^ppr318_",
-                 x = name
+                       x = name
                )) {
         df <- add_irr_surface_column(
-                df = df,
+                    df = df,
                 irr_df = ppr318_par
               )
       }
 
   # Add Gaussian predictions using the combined Gaussian fit model
   df <- add_gaussian_predictions(
-          df = df,
+             df = df,
           model = gaussian_fit
         )
 
   # Extract the depth from the dataframe name
   depth <- as.numeric(
              x = sub(
-                   pattern = ".*_(\\d+)$",
+                       pattern = ".*_(\\d+)$",
                    replacement = "\\1",
-                   x = name
+                             x = name
                  )
            )
   
   # Add PAR at different depths using the extracted depth
   df <- add_par_at_depths(
-          df = df,
+             df = df,
           depth = depth
         )
 
   # Set values less than 1 to zero in the 'irr' column
-  df$irr[df$irr < 1] <- 0
+  df[ , "irr"][df[ , "irr"] < 1] <- 0
   
   # Update the dataframe in the list
   dataframes_ts[[name]] <- df
@@ -994,7 +1095,7 @@ for (name in names(dataframes_ts)) {
 
 # Update the global environment with the modified dataframes
 list2env(
-  x = dataframes_ts,
+      x = dataframes_ts,
   envir = .GlobalEnv
 )
 
@@ -1007,13 +1108,15 @@ for (name in names(dataframes_ts)) {
   df <- dataframes_ts[[name]]  # Extract the dataframe by name
 
   # Select the specified columns
-  df <- df[, c("datetime",
-               "do.obs",
-               "do.sat",
-               "k.gas",
-               "z.mix",
-               "irr",
-               "wtr")]
+  df <- df[ , c(
+                "datetime",
+                "do.obs",
+                "do.sat",
+                "k.gas",
+                "z.mix",
+                "irr",
+                "wtr"
+              )]
 
   # Update the dataframe in the list
   dataframes_ts[[name]] <- df
@@ -1021,7 +1124,7 @@ for (name in names(dataframes_ts)) {
 
 # Update the global environment with the modified dataframes
 list2env(
-  x = dataframes_ts,
+      x = dataframes_ts,
   envir = .GlobalEnv
 )
 
