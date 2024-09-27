@@ -32,8 +32,11 @@ for (df_name in dataframe_names) {
   
   # Apply the metabb function
   mle.res <- metabb(
-                 data = df,
-               method = "mle",
+                      data = df,
+                    method = "mle",
+                  wtr.name = "wtr",
+                  irr.name = "irr",
+               do.obs.name = "do.obs"
              )
   
   # Set negative GPP values to NA
@@ -80,6 +83,21 @@ for (df_name in names(
   # Get the processed dataframe from the results_list
   mle.res <- results_list[[df_name]]
   
+  # Calculate the cumulative sum reset for each year
+  mle.res[ , "cum_nep"] <- ave(
+                               x = ifelse(
+                                     test = is.na(
+                                              x = mle.res[ , "NEP"]
+                                            ),
+                                      yes = 0,
+                                       no = mle.res[ , "NEP"]
+                                   ),
+                             format(
+                                    x = mle.res[ , "date"],
+                               format = "%Y"
+                             ),
+                             FUN = cumsum
+                           )
   # Create the PNG file with larger dimensions
   png(
     filename = paste0(
@@ -138,19 +156,11 @@ for (df_name in names(
   
   # Second plot
   plot(
-           cumsum(
-             x = ifelse(
-                   test = is.na(
-                            x = NEP
-                          ),
-                    yes = 0,
-                     no = NEP
-                 )
-           ) ~ date,
+     cum_nep ~ date,
         data = mle.res,
          pch = 19,
         xlim = range(Date),
-        ylim = c(-300, 300),
+        ylim = c(-200, 200),
         xlab = "",
         ylab = expression(
                  Cumulative ~ NEP ~ (mg ~ O[2] ~ L^{-1})

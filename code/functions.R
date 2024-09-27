@@ -577,17 +577,17 @@ day_of_year_to_month <- function(day_of_year) {
 }
 
 #===============================================================================
-# Function Name: calculate_gaussian_r_squared
-# Description: This function calculates the R-squared value for a Gaussian fit 
-#              model and dataset.
+# Function Name: calculate_harmonic_regression_r_squared
+# Description: This function calculates the R-squared value for a harmonic 
+#              regression model and dataset.
 # Parameters: 
-#   - model: The Gaussian model for which to calculate R-squared.
+#   - model: The harmonic regression model for which to calculate R-squared.
 #   - data: A dataframe containing the observed Kd values.
 # Returns: The R-squared value indicating the proportion of variance explained 
 #          by the model.
 #===============================================================================
 
-calculate_gaussian_r_squared <- function(model, data) {
+calculate_harmonic_regression_r_squared <- function(model, data) {
   observed <- data$Kd
   fitted <- predict(model, newdata = data)
   tss <- sum((observed - mean(observed, na.rm = TRUE))^2, na.rm = TRUE)
@@ -597,19 +597,21 @@ calculate_gaussian_r_squared <- function(model, data) {
 }
 
 #===============================================================================
-# Function Name: add_gaussian_predictions
-# Description: This function adds Gaussian predictions to a dataframe using a 
-#              provided model.
+# Function Name: add_harmonic_regression_predictions
+# Description: This function adds harmonic regression predictions to a dataframe 
+#              using a provided model.
 # Parameters: 
 #   - df: A dataframe containing the day of year ('doy') column.
-#   - model: A Gaussian model used for prediction.
+#   - model: A harmonic regression model used for prediction.
 # Returns: The updated dataframe with the 'Kd' column containing the predicted 
 #          values.
 #===============================================================================
 
-add_gaussian_predictions <- function(df, model) {
+add_harmonic_regression_predictions <- function(df, model) {
   day_of_year <- df$doy
-  newdata <- data.frame(day_of_year = day_of_year)
+  xc <- cos(2 * pi * day_of_year / 365.25)
+  xs <- sin(2 * pi * day_of_year / 365.25)
+  newdata <- data.frame(xc = xc, xs = xs)
   df$Kd <- predict(model, newdata = newdata)
   return(df)
 }

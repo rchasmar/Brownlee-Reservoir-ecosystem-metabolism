@@ -21,7 +21,7 @@ metabb <- function(
           x = data
         ) == wtr.name] <- "wtr"
     } else {
-        data[, "wtr"] <- data[, wtr.name]
+        data[ , "wtr"] <- data[ , wtr.name]
       }
   }
   if (irr.name != "irr") {
@@ -34,7 +34,7 @@ metabb <- function(
           x = data
         ) == irr.name] <- "irr"
     } else {
-        data[, "irr"] <- data[, irr.name]
+        data[ , "irr"] <- data[ , irr.name]
       }
   }   
   if (do.obs.name != "do.obs") {
@@ -47,7 +47,7 @@ metabb <- function(
           x = data
         ) == do.obs.name] <- "do.obs"
     } else {
-        data[, "do.obs"] <- data[, do.obs.name]
+        data[ , "do.obs"] <- data[ , do.obs.name]
       }
   }
     

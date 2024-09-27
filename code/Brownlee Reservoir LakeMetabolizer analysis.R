@@ -935,8 +935,8 @@ plot(
   ylim = c(0, 1.5), 
   xaxt = "n",
    col = as.factor(
-           x = combined_results[ , "source"]
-         )
+            x = combined_results[ , "source"]
+          )
 )
 axis(
     side = 1,
@@ -946,49 +946,38 @@ axis(
            )
 )
 
-# Fit a single Gaussian curve for all data
-gaussian_fit <- nls(
-                  formula = Kd ~ a * exp(-((day_of_year - b)^2) / (2 * c^2)), 
-                     data = combined_results, 
-                    start = list(
-                              a = 1, 
-                              b = mean(
-                                        x = combined_results[ , "day_of_year"], 
-                                    na.rm = TRUE
-                                  ), 
-                              c = sd(
-                                        x = combined_results[ , "day_of_year"], 
-                                    na.rm = TRUE
-                                  )
-                            ), 
-                  control = nls.control(
-                              minFactor = 1e-10,
-                                maxiter = 1000
-                            )
-                )
+# Fit a linear model with cosine and sine transformations
+Time <- combined_results[ , "day_of_year"]
+xc <- cos(2 * pi * Time / 365.25)
+xs <- sin(2 * pi * Time / 365.25)
+lm_fit <- lm(
+            formula = Kd ~ xc + xs,
+               data = combined_results
+          )
 
-# Generate a sequence of day_of_year values for prediction
+# Generate a sequence of day_of_year values for prediction from 1 to 366
 day_of_year_seq <- seq(
-                           from = min(
-                                        x = combined_results[ , "day_of_year"],
-                                    na.rm = TRUE
-                                  ), 
-                             to = max(
-                                        x = combined_results[ , "day_of_year"],
-                                    na.rm = TRUE
-                                  ), 
-                     length.out = 100
+                           from = 1,
+                             to = 366,
+                     length.out = 366
                    )
 
-# Predict Kd values using the Gaussian fit model
+# Predict Kd values using the linear model
+xc_seq <- cos(
+            x = 2 * pi * day_of_year_seq / 365.25
+          )
+xs_seq <- sin(
+            x = 2 * pi * day_of_year_seq / 365.25
+          )
 fitted_values <- predict(
-                    object = gaussian_fit, 
+                    object = lm_fit, 
                    newdata = data.frame(
-                               day_of_year = day_of_year_seq
+                               xc = xc_seq,
+                               xs = xs_seq
                              )
                  )
 
-# Add the fitted Gaussian curve to the plot
+# Add the fitted curve to the plot
 lines(
     x = day_of_year_seq,
     y = fitted_values,
@@ -1011,10 +1000,10 @@ legend(
 )
 
 # Calculate R-squared for the Gaussian fit
-gaussian_r_squared <- calculate_gaussian_r_squared(
-                        model = gaussian_fit, 
-                         data = combined_results
-                      )
+harmonic_regression_r_squared <- calculate_harmonic_regression_r_squared(
+                                   model = lm_fit, 
+                                    data = combined_results
+                                 )
 
 # Add R-squared and p-value to the plot
 text(
@@ -1023,7 +1012,7 @@ text(
   labels = paste(
              "R-squared:",
              round(
-                    x = gaussian_r_squared,
+                    x = harmonic_regression_r_squared,
                digits = 3
              ),
              "\nP-value: < 0.005",
@@ -1065,8 +1054,8 @@ for (name in names(
               )
       }
 
-  # Add Gaussian predictions using the combined Gaussian fit model
-  df <- add_gaussian_predictions(
+  # Add harmonic regression predictions using the combined Gaussian fit model
+  df <- add_harmonic_regression_predictions(
              df = df,
           model = gaussian_fit
         )
