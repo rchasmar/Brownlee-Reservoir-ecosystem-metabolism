@@ -589,7 +589,7 @@ for (name in names(
   # Apply the remove_do_anomalies function
   df <- remove_do_anomalies(
                  df = df,
-          threshold = 2
+          threshold = 0.2
         )
   
   # Update the dataframe in the list
