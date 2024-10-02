@@ -191,11 +191,24 @@ compute_oxygen_saturation <- function(x) {
 # Returns: A dataframe with anomalies in DO observations removed.
 #===============================================================================
 
-remove_do_anomalies <- function(df, threshold) {
-  df %>%
-    mutate(do_diff = c(NA, diff(do.obs)), 
-           do.obs = ifelse(abs(do_diff) > threshold, NA, do.obs)) %>% 
-    select(-do_diff)
+remove_do_anomalies <- function(
+  df,
+  threshold
+) {
+  do_diff <- c(
+               NA,
+               diff(
+                 x = df[ , "do.obs"]
+               )
+             )
+  df[ , "do.obs"] <- ifelse(
+                       test = abs(
+                                x = do_diff
+                              ) > threshold,
+                        yes = NA,
+                         no = df[ , "do.obs"]
+                     )
+  return(df)
 }
 
 #===============================================================================

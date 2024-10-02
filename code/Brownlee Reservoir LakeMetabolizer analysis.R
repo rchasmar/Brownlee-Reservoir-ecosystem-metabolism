@@ -579,7 +579,7 @@ for (name in names(
   
   # Set do.obs and do.sat to NA where do.percent > 300
   idx <- which(
-           df[ , "do.percent"] > 200
+           df[ , "do.percent"] > 300
          )
   df[idx, c(
             "do.obs",
