@@ -634,6 +634,731 @@ add_par_at_depths <- function(df, depth) {
 }
 
 #===============================================================================
+# Function Name: metabb
+# Description: This function processes water quality data by matching column 
+#              names, applying a specified metabolic method, and returning the 
+#              results.
+# Parameters: 
+#   - data: A dataframe containing the water quality data.
+#   - method: A character string specifying the metabolic method to use. 
+#             Options are "bookkeep", "bayesian", "kalman", "ols", "mle".
+#   - wtr.name: A character string for the water temperature column name.
+#   - irr.name: A character string for the irradiance column name.
+#   - do.obs.name: A character string for the observed dissolved oxygen column name.
+#   - ...: Additional arguments passed to the metabolic method function.
+# Returns: The processed dataframe with metabolic calculations applied.
+#===============================================================================
+
+metabb <- function(
+  data,
+  method,
+  wtr.name,
+  irr.name, 
+  do.obs.name,
+  ...
+) {
+    
+  # Capture additional arguments
+  m.args <- list(...)
+    
+  # Rename columns if necessary
+  if (wtr.name != "wtr") {
+    if (!"wtr" %in% names(
+                      x = data
+                    )) {
+      names(
+        x = data
+      )[names(
+          x = data
+        ) == wtr.name] <- "wtr"
+    } else {
+        data[ , "wtr"] <- data[ , wtr.name]
+      }
+  }
+  if (irr.name != "irr") {
+    if (!"irr" %in% names(
+                      x = data
+                    )) {
+      names(
+        x = data
+      )[names(
+          x = data
+        ) == irr.name] <- "irr"
+    } else {
+        data[ , "irr"] <- data[ , irr.name]
+      }
+  }   
+  if (do.obs.name != "do.obs") {
+    if (!"do.obs" %in% names(
+                         x = data
+                       )) {
+      names(
+        x = data
+      )[names(
+          x = data
+        ) == do.obs.name] <- "do.obs"
+    } else {
+        data[ , "do.obs"] <- data[ , do.obs.name]
+      }
+  }
+    
+  # Define possible methods and match the provided method
+  possibleMethods <- c(
+                       "bookkeep",
+                       "bayesian",
+                       "kalman",
+                       "ols",
+                       "mle"
+                     )
+  mtd <- match.arg(
+               arg = method,
+           choices = possibleMethods
+         )
+  mtdCall <- paste(
+               "metab",
+               mtd,
+               sep = "."
+             )
+    
+  # Prepare data by removing rows with NAs
+  data1 <- addNAs(
+                       x = data[complete.cases(data), ],
+             percentReqd = 1
+           )
+  data2 <- data1[complete.cases(data1), ]
+    
+  # Generate unique IDs based on year and day of year (doy)
+  ids <- id(
+           list(
+             data2[ , "year"],
+             trunc(
+               x = data2[ , "doy"]
+             )
+           )
+         )
+  ids <- as.integer(
+           x = ids - (min(ids) - 1)
+         )
+  nid <- length(
+           x = unique(
+                 x = ids
+               )
+         )
+    
+  # Initialize results list
+  results <- vector(
+                 mode = "list",
+               length = nid
+             )
+  names(
+    x = results
+  ) <- unique(
+         x = ids
+       )
+    
+  # Loop through unique IDs and apply the selected method
+  for (i in unique(
+              x = ids
+            )) {
+    poss.args <- c(
+                   "do.obs",
+                   "do.sat",
+                   "k.gas",
+                   "z.mix",
+                   "irr",
+                   "wtr",
+                   "datetime"
+                 )
+    used.args <- poss.args[poss.args %in% names(
+                                            x = data2
+                                          )]
+    largs0 <- as.list(
+                x = data2[i == ids, used.args]
+              )
+    largs <- c(
+               largs0,
+               m.args[!names(
+                         x = m.args
+                       ) %in% names(
+                                x = largs0
+                              )]
+             )
+    results[[as.character(
+               x = i
+             )]] <- do.call(
+                      what = mtdCall,
+                      args = largs
+                    )
+  }
+    
+    # Combine results into a single data frame
+    answer0 <- conquerList(
+                      x = results,
+                 naming = data.frame(
+                            year = data2[!duplicated(
+                                            x = ids
+                                          ), "year"],
+                             doy = trunc(
+                                     x = data2[!duplicated(
+                                                  x = ids
+                                                ), "doy"]
+                                   )
+                          )
+               )
+    a0.names <- names(
+                  x = results[[1]]
+                )
+    
+    # Process the combined results
+    if (length(
+          x = a0.names
+        ) > 1 & is.list(
+                  x = answer0
+                ) & !is.data.frame(
+                       x = answer0
+                     )) {
+      names(
+        x = answer0
+      ) <- a0.names
+      answer <- answer0$"metab"
+
+      for (i in 1:length(
+                    x = a0.names
+                  )) {
+        if (a0.names[i] == "metab") {
+          next
+        }
+        if (a0.names[i] == "smoothDO") {
+          t.sDO <- answer0[[a0.names[i]]]
+          t.sDO <- t.sDO[ , !names(
+                               x = t.sDO
+                             ) %in% c(
+                                      "doy",
+                                      "year"
+                                    )]
+          attr(
+                x = answer,
+            which = "smoothDO.vec"
+          ) <- c(
+                 t(
+                   x = t.sDO
+                 )
+               )
+        }
+        attr(
+              x = answer,
+          which = a0.names[i]
+        ) <- answer0[[a0.names[i]]]
+      }
+    } else {
+      answer <- answer0
+      }
+    
+    return(answer)
+}
+
+#===============================================================================
+# Function Name: addNAs
+# Description: This function adds missing datetime entries to a dataframe, 
+#              ensuring continuous time series data by filling in gaps with NA 
+#              values.
+# Parameters: 
+#   - x: A dataframe containing the original time series data.
+#   - ...: Additional arguments passed to the byeShort function.
+# Returns: The updated dataframe with missing datetime entries filled in and 
+#          corresponding 'doy' and 'year' columns added if they were missing.
+#===============================================================================
+
+addNAs <- function(
+  x,
+  ...
+) {
+  # Identify columns related to date, day of year (doy), and year
+  dateL <- grepl(
+                 pattern = ".?date?.",
+                       x = names(x),
+             ignore.case = TRUE
+           ) # matches anything with "date" in it
+  dL <- grepl(
+          pattern = "^[dD][oO][yY]$",
+                x = names(x)
+        ) # matches doy, regardless of case
+  yL <- grepl(
+          pattern = "^[yY]ear4?$",
+                x = names(x)
+        ) # matches Year, year, year4, Year4
+
+  # The datetime checks result in error if conditions not met
+  if (any(
+        dateL
+      )) { # look for the date column
+      names(
+        x = x
+      )[dateL] <- "datetime"
+  } else {
+      stop(
+        "No 'datetime' column found"
+      )
+  }
+  if (!"POSIXct" %in% class(
+                        x = x[ , "datetime"]
+                      )) { # ensure the date column is POSIXct
+      stop(
+        "date column must be POSIXct"
+      )
+  }
+
+  # If doy/year aren't found, they'll be added
+  # Because we are requiring POSIXct datetime, these values can be generated if they're missing
+  if (any(
+        dL
+      )) { # look for "day of year" column
+      names(
+        x = x
+      )[dL] <- "doy"
+  } else {
+      x[ , "doy"] <- date2doy(
+                       x = x[ , "datetime"]
+                     )
+  }
+  if (any(
+        yL
+      )) { # look for "year" column
+      names(
+        x = x
+      )[yL] <- "year"
+  } else {
+      x[ , "year"] <- as.integer(
+                        x = format.Date(
+                                   x = x[ , "datetime"],
+                              format = "%Y"
+                            )
+                      )
+  }
+
+  # Define rounding digits and mode function
+  rdig <- 4
+  Mode <- function(x) { # function to find the mode
+      ux <- unique(
+              x = x
+            )
+      ux[which.max(
+           x = tabulate(
+                 bin = match(
+                             x = x,
+                         table = ux
+                       )
+               )
+         )]
+  }
+  
+  # Calculate expected frequency and minutes between samples
+  ex <- round(
+          x = Mode(
+                x = 1 / diff(
+                          x = x[, "doy"]
+                        )
+              )
+        ) # frequency calculated in metab.xx()
+  mins <- 1 / ex * 24 * 60
+  is.wholenumber <- function(
+    x,
+    tol = .Machine[["double.eps"]]^0.5
+  ) {
+    abs(
+      x = x - round(
+                x = x
+              )
+    ) < tol
+  }
+  if (!is.wholenumber(
+         x = mins
+       )) {
+    warning(
+      "Time between samples not whole number"
+    ) 
+  }
+
+  # Adjust data using byeShort function
+  x1 <- byeShort(
+                     X = x,
+              Expected = ex,
+               ToCount = "doy",
+          TruncToCount = TRUE,
+          ...
+        )
+  if (nrow(
+        x = x1
+      ) == 0) {
+    return(x1)
+  }
+
+  # Generate ideal datetime sequence and merge with existing data
+  Range <- range(
+             x1[ , "datetime"]
+           )
+  Ideal <- data.frame(
+             "datetime" = seq(
+                            from = Range[1],
+                              to = Range[2],
+                              by = paste(
+                                     mins,
+                                     "mins"
+                                   )
+                          )
+           )
+
+  print(
+    paste(
+      "NA's added to fill in time series:",
+      dim(
+        x = Ideal
+      )[1] - dim(
+               x = x1
+             )[1],
+      sep = " "
+    )
+  )
+  flush.console()
+  x2 <- merge(
+              x = x1,
+              y = Ideal,
+          all.x = TRUE,
+          all.y = TRUE
+        )
+  
+  # Interpolate year and doy if they were originally present
+  if (any(
+        yL
+      )) {
+    x2[ , "year"] <- approx(
+                          x = x2[ , "datetime"],
+                          y = x2[ , "year"],
+                       xout = Ideal[, 1]
+                     )$y
+  }
+  if (any(
+        dL
+      )) {
+    x2[ , "doy"] <- approx(
+                         x = x2[ , "datetime"],
+                         y = x2[ , "doy"],
+                      xout = Ideal[, 1]
+                    )$y
+  }
+
+  return(x2)
+}
+
+#===============================================================================
+# Function Name: date2doy
+# Description: This function converts POSIX date-time objects to the day of the 
+#              year, including fractional days.
+# Parameters: 
+#   - x: A POSIX date-time object.
+# Returns: A numeric value representing the day of the year with fractional 
+#          parts.
+#===============================================================================
+
+date2doy <- function(x) {
+  # Ensure the input is a POSIX date-time object
+  stopifnot(
+    any(
+      grepl(
+        pattern = "^POSIX",
+              x = class(
+                    x = x[1]
+                  )
+      )
+    )
+  )
+  
+  # Extract the day of the year as a numeric value
+  day <- as.numeric(
+           x = format(
+                      x = x,
+                 format = "%j"
+               )
+         )
+  
+  # Pattern to match the time part of the date-time string
+  pat <- quote(
+           expr = "([0-9]{2}:){2}[0-9]{2}"
+         )
+  
+  # Convert the time part to midnight (00:00:00) in America/Denver timezone
+  midnight <- as.POSIXct(
+                 x = gsub(
+                           pattern = pat,
+                       replacement = "00:00:00",
+                                 x = x
+                     ),
+                tz = "America/Denver"
+              )
+  
+  # Calculate the fractional day difference from midnight
+  frac <- as.numeric(
+            x = difftime(
+                  time1 = x,
+                  time2 = midnight,
+                  units = "days"
+                )
+          )
+  
+  # Return the day of the year with the fractional part
+  day + frac
+}
+
+#===============================================================================
+# Function Name: byeShort
+# Description: This function removes duplicates and incomplete records from a 
+#              dataframe based on specified criteria, ensuring data integrity 
+#              for time series analysis.
+# Parameters: 
+#   - X: A dataframe containing the original data.
+#   - percentReqd: A numeric value specifying the required percentage of expected 
+#                  records for a group to be retained.
+#   - Expected: A numeric value specifying the expected number of records per group.
+#   - ToCount: A character string specifying the column name used for counting 
+#              records.
+#   - TruncToCount: A logical value indicating whether to truncate the count.
+#   - By: A character vector specifying the columns used to define groups.
+# Returns: The updated dataframe with duplicates and incomplete records removed.
+#===============================================================================
+
+byeShort <- function(
+  X,
+  percentReqd = 0.80,
+  Expected = 288,
+  ToCount = "doy",
+  TruncToCount = TRUE,
+  By = c(
+         "year",
+         "doy"
+       )
+) {
+  # Function to remove duplicates and incomplete records based on specified criteria
+  
+  # Helper function to remove duplicates based on the ToCount column
+  dups <- function(x) {
+    x[!duplicated(
+         x = round(
+                    x = x[ , ToCount],
+               digits = 9
+             )
+       ), ]
+  }
+  
+  # Remove duplicates within each group defined by By, excluding ToCount
+  X <- ddply(
+              .data = X,
+         .variables = setdiff(
+                        x = By,
+                        y = ToCount
+                      ),
+               .fun = dups
+       )
+  
+  # Create an index column for tracking row positions
+  ByInd <- data.frame(
+             X[ , By],
+             "IND" = 1:nrow(
+                         x = X
+                       )
+           )
+  
+  # Helper function to calculate the size and range of each group
+  which_nrow <- function(x) {
+    c(
+       "Size" = nrow(
+                  x = x
+                ),
+      "Start" = min(
+                  x[ , "IND"]
+                ),
+       "Stop" = max(
+                  x[ , "IND"]
+                )
+    )
+  }
+  
+  # Apply the which_nrow function to each group defined by By
+  Sizes <- ddply(
+                  .data = trunc(
+                            x = ByInd
+                          ),
+             .variables = By,
+                   .fun = which_nrow
+           )
+  
+  # Identify groups that are too short based on the expected size and required percentage
+  TooShort <- Sizes[which(
+                      Sizes[ , "Size"] < Expected * percentReqd
+                    ), c(
+                         "Start",
+                         "Stop"
+                       )]
+  
+  # Helper function to generate a sequence from Start to Stop
+  Start2Stop <- function(x) {
+    x[1]:x[2]
+  }
+  
+  # Generate a vector of row indices to be removed
+  WaveTo <- unlist(
+                      x = apply(
+                                 X = TooShort,
+                            MARGIN = 1,
+                               FUN = Start2Stop
+                          ),
+              use.names = FALSE
+            )
+  
+  # Print the number of points removed
+  print(
+    paste(
+      "Points removed due to incomplete day or duplicated time step:",
+      length(
+        x = WaveTo
+      ),
+      sep = " "
+    )
+  )
+  flush.console()
+  
+  # Remove the identified rows from the dataset
+  if (length(
+        x = WaveTo
+      ) != 0) {
+    Xr <- X[-WaveTo, ]
+  } else {
+      Xr <- X
+    }
+  
+  return(Xr)
+}
+
+#===============================================================================
+# Function Name: conquerList
+# Description: This function processes a list of data frames or lists, combining 
+#              them into a single data frame or list based on specified criteria.
+# Parameters: 
+#   - x: A list of data frames or lists to be combined.
+#   - naming: An optional data frame to be used for naming the combined results.
+# Returns: A combined data frame or list based on the input structure.
+#===============================================================================
+
+conquerList <- function(
+  x,
+  naming = NULL
+) {
+  # If x is not a list or is a data frame, return x as is
+  if (!is.list(
+         x = x
+       ) | is.data.frame(
+             x = x
+           )) {
+    return(x)
+  }
+  
+  s1 <- length(
+          x = x
+        )
+  s2 <- length(
+          x = x[[1]]
+        )
+  u1 <- unlist(
+                  x = x,
+          recursive = FALSE
+        )
+  
+  # Ensure the length of the unlisted elements matches the expected size
+  stopifnot(
+    length(
+      x = u1
+    ) == s1 * s2
+  )
+  
+  # Check if the first element of x is a data frame with a single row
+  if (is.data.frame(
+        x = x[[1]]
+      )) {
+    single.row <- nrow(
+                    x = x[[1]]
+                  ) == 1L
+  } else {
+      single.row <- FALSE
+    }
+  
+  # If each element of the list x contains a row of a data frame, return combined data frame
+  if (single.row & is.list(
+                     x = x
+                   )) {
+    return(
+      cbind(
+        naming,
+        ldply(
+          .data = x
+        )
+      )
+    )
+  }
+  
+  # Initialize a list to store the results
+  cqd <- vector(
+             mode = "list",
+           length = s2
+         )
+  
+  # Loop through each column of the first element of x
+  for (i in 1:s2) {
+    # Generate a sequence of indices for the i-th column across all elements of x
+    ti <- seq(
+            from = i,
+              to = s1 * s2,
+              by = s2
+          )
+    tl <- vector(
+              mode = "list",
+            length = s1
+          )
+    
+    # Extract the i-th column from each element of x
+    for (j in 1:s1) {
+      tl[[j]] <- u1[[ti[j]]]
+    }
+    
+    # Combine the extracted columns into a data frame or list
+    if (is.data.frame(
+          x = tl[[1]]
+        ) | !is.list(
+               x = tl[[1]]
+             )) {
+      if (!is.null(
+             x = naming
+           )) {
+        cqd[[i]] <- cbind(
+                      naming,
+                      ldply(
+                        .data = tl
+                      )
+                    )
+      } else {
+        cqd[[i]] <- ldply(
+                      .data = tl
+                    )
+        }
+    } else {
+      cqd[[i]] <- llply(
+                    .data = tl
+                  )
+      }
+  }
+  
+  return(cqd)
+}
+
+#===============================================================================
 # Function Name: automate_git
 # Description: This function stages, commits, and pushes changes to a GitHub 
 #              repository using system commands.
